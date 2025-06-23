@@ -15,7 +15,7 @@ export function ProductCard({
 
   return (
     <div 
-      className="bg-[#F9F7F1] rounded-3xl shadow-2xl border-2 border-[#FF6B35]/20 flex flex-col transition-all duration-300 hover:scale-105 hover:shadow-2xl group relative overflow-hidden cursor-pointer"
+      className="bg-[#F9F7F1] rounded-3xl border-2 border-[#FF6B35]/20 flex flex-col transition-all duration-300 hover:scale-105 group relative overflow-hidden cursor-pointer"
       onClick={() => onViewProduct(product)}
     >
       <div className="relative overflow-hidden">
@@ -26,7 +26,7 @@ export function ProductCard({
           onError={() => setImgSrc("/placeholder.svg")}
         />
         {product.badge && (
-          <span className="absolute top-3 left-3 bg-[#6FBF73] text-white text-xs font-semibold px-3 py-1 rounded-full shadow-lg z-10 uppercase tracking-widest transition-transform duration-300 group-hover:scale-110">
+          <span className="absolute top-3 left-3 bg-[#6FBF73] text-white text-xs font-semibold px-3 py-1 rounded-full z-10 uppercase tracking-widest transition-transform duration-300 group-hover:scale-110">
             {product.badge}
           </span>
         )}
@@ -44,7 +44,7 @@ export function ProductCard({
               e.stopPropagation();
               onAddToCart(product);
             }}
-            className="px-4 py-1 rounded-full bg-[#D7263D] text-[#F9F7F1] font-bold transition-all duration-300 shadow hover:bg-[#FF6B35] hover:scale-110 border-2 border-[#D7263D] hover:border-[#FF6B35]"
+            className="px-4 py-1 rounded-full bg-[#D7263D] text-[#F9F7F1] font-bold transition-all duration-300 hover:bg-[#FF6B35] hover:scale-110 border-2 border-[#D7263D] hover:border-[#FF6B35]"
             aria-label={`Add ${product.title} to cart`}
           >
             Add to Cart

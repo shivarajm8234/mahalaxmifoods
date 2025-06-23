@@ -120,7 +120,7 @@ export function MasalaChatBot() {
   return (
     <>
       <div
-        className="fixed z-50 bottom-20 right-4 md:bottom-8 md:right-10"
+        className="fixed z-50 bottom-10 right-4 md:bottom-8 md:right-10"
         style={{ pointerEvents: open ? 'auto' : 'auto' }}
       >
         {open ? (

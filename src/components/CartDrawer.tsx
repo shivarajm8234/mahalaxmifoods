@@ -56,7 +56,7 @@ export function CartDrawer({
   if (!open && items.length > 0)
     return (
       <div
-        className="fixed bottom-16 md:bottom-4 left-0 right-0 z-50 w-full bg-[#FF6B35] border-2 border-[#FF6B35] rounded-none shadow-lg flex justify-between items-center px-3 md:px-4 py-2 animate-fade-in cursor-pointer hover:scale-105 transition duration-200 md:left-1/2 md:-translate-x-1/2 md:max-w-sm md:rounded-xl"
+        className="fixed bottom-0 left-0 right-0 z-50 w-full bg-[#FF6B35] border-2 border-[#FF6B35] rounded-none shadow-lg flex justify-between items-center px-3 md:px-4 py-2 animate-fade-in cursor-pointer hover:scale-105 transition duration-200 md:left-1/2 md:-translate-x-1/2 md:max-w-sm md:rounded-xl"
         onClick={handleOpenCart}
         aria-label="Open cart"
         tabIndex={0}
@@ -87,7 +87,7 @@ export function CartDrawer({
           Close
         </button>
       </div>
-      <div className="flex-1 overflow-y-auto px-2 space-y-4">
+      <div className="flex-1 overflow-y-auto px-2 space-y-4 max-h-[calc(100vh-180px)]">
         {items.length === 0 ? (
           <div className="my-8 text-center text-base md:text-lg text-[#2F2F2F]">Your cart is empty.</div>
         ) : (

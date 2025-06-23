@@ -204,7 +204,7 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-brand-cream font-sans antialiased flex flex-col pb-16 md:pb-0">
+    <div className="min-h-screen bg-brand-cream font-sans antialiased flex flex-col">
       <Navbar cartCount={cartManager.cart.reduce((s, i) => s + i.quantity, 0)} onCartClick={handleCartClick} />
       <main className="flex-1">
         <Hero onShop={handleShopNow} />
@@ -217,7 +217,7 @@ const Index = () => {
         <AboutSection />
         <ContactSection />
       </main>
-      <footer className="text-white pt-16 pb-8 px-4 md:px-8" style={{ background: 'linear-gradient(90deg, #1A2634 50%, #274472 100%)' }}>
+      <footer className="w-full text-white pt-16 pb-8 px-4 md:px-8" style={{ background: 'linear-gradient(90deg, #1A2634 50%, #274472 100%)' }}>
         <div className="container-fluid mx-auto grid grid-cols-1 md:grid-cols-4 gap-8 text-center md:text-left">
           
           {/* Left: Company Info */}

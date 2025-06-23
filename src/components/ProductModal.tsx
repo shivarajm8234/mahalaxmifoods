@@ -124,7 +124,7 @@ export function ProductModal({ product, open, onClose, onAddToCart, reviews, onA
                       onClick={handleAddToCart}
                       className="w-auto px-6 py-2 bg-[#D7263D] hover:bg-[#FF6B35] text-[#F9F7F1] font-bold rounded-xl transition-all duration-300 shadow-lg text-sm md:text-base touch-manipulation"
                     >
-                      Add to Cart - ₹{(product.price * quantity).toFixed(2)}
+                      Add to Cart
                     </button>
                   </div>
                 </div>

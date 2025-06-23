@@ -3,10 +3,10 @@ export function AboutSection() {
     <section id="about" className="py-24 bg-[#F0F8FF]">
       <div className="max-w-4xl mx-auto flex flex-col items-center px-5">
         <h2 
-          className="text-4xl font-playfair font-bold text-gray-800 mb-6"
+          className="text-4xl font-playfair font-bold text-gray-800 mb-6 text-center"
           data-aos="fade-down"
         >
-          About Shree Mahalaxmi Food Products
+          About <span className="text-[#D7263D]">Us</span>
         </h2>
         <p 
           className="text-lg mb-6 text-center max-w-2xl text-gray-800"

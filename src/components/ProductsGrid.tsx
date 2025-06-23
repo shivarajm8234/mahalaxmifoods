@@ -107,6 +107,9 @@ export function ProductsGrid({ onAddToCart, reviews, onAddReview }: ProductsGrid
       scrollContainer.addEventListener('scroll', handleScroll);
       window.addEventListener('resize', handleScroll);
 
+      // Always show the first product on mount
+      scrollContainer.scrollLeft = 0;
+
       return () => {
         scrollContainer.removeEventListener('scroll', handleScroll);
         window.removeEventListener('resize', handleScroll);
@@ -148,7 +151,7 @@ export function ProductsGrid({ onAddToCart, reviews, onAddReview }: ProductsGrid
             {/* Horizontal Scroll Container */}
             <div
               ref={scrollContainerRef}
-              className="flex gap-4 overflow-x-auto scrollbar-hide py-4 px-2 snap-x snap-mandatory"
+              className="flex w-full gap-4 overflow-x-auto scrollbar-hide py-4 px-2 snap-x snap-mandatory"
               style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
               {products.map((product, index) => (
@@ -156,7 +159,7 @@ export function ProductsGrid({ onAddToCart, reviews, onAddReview }: ProductsGrid
                   key={product.id}
                   data-aos="fade-up"
                   data-aos-delay={index * 100}
-                  className="flex-shrink-0 w-72 snap-start"
+                  className="flex-shrink-0 w-72 snap-center"
                 >
               <ProductCard 
                 product={product} 
