@@ -1,5 +1,11 @@
 import * as React from "react";
 import { toast } from "@/hooks/use-toast";
+import emailjs from '@emailjs/browser';
+
+// Initialize EmailJS with your public key
+const EMAILJS_SERVICE_ID = 'service_q9z4isp'; // Replace with your EmailJS service ID
+const EMAILJS_TEMPLATE_ID = 'template_j0upuvs'; // Replace with your EmailJS template ID
+const EMAILJS_PUBLIC_KEY = '0DnCEAKe0hTLOZZS0'; // Replace with your EmailJS public key
 
 export function ContactSection() {
   const [form, setForm] = React.useState({ name: "", email: "", message: "" });
@@ -9,8 +15,10 @@ export function ContactSection() {
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
   };
 
-  const onSubmit = (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Form validation
     if (!form.name || !form.email || !form.message) {
       toast({
         title: "Please fill all fields.",
@@ -18,15 +26,55 @@ export function ContactSection() {
       });
       return;
     }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(form.email)) {
+      toast({
+        title: "Invalid email address",
+        description: "Please enter a valid email address.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+
+    try {
+      // Initialize EmailJS with public key
+      emailjs.init(EMAILJS_PUBLIC_KEY);
+      
+      // Send email using EmailJS
+      await emailjs.send(
+        EMAILJS_SERVICE_ID,
+        EMAILJS_TEMPLATE_ID,
+        {
+          from_name: form.name,
+          from_email: form.email,
+          to_email: 'shreemahalaxmi.product@gmail.com',
+          message: form.message,
+          reply_to: form.email
+        }
+      );
+
+      // Show success message
       toast({
         title: "Thank you!",
-        description: "Your message was sent. We'll respond soon.",
+        description: "Your message has been sent. We'll get back to you soon!",
       });
+
+      // Reset form
       setForm({ name: "", email: "", message: "" });
-    }, 1200);
+    } catch (error) {
+      console.error('Error sending email:', error);
+      toast({
+        title: "Error",
+        description: "Failed to send message. Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
