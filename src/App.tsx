@@ -2,10 +2,16 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import { OrdersPage } from "./pages/orders/OrdersPage";
+import Admin from "./pages/Admin";
+import AdminDashboard from "./pages/AdminDashboard";
+import ManageProducts from "./pages/ManageProducts";
+import ManageReviews from "./pages/ManageReviews";
+import { AdminLayout } from "./components/admin/AdminLayout";
+import Footer from "./components/Footer";
 import AOS from 'aos';
 import 'aos/dist/aos.css';
 import { useEffect, ErrorInfo, Component } from "react";
@@ -60,17 +66,20 @@ const queryClient = new QueryClient({
 // Protected route component
 const ProtectedRoute = () => {
   const { currentUser, loading } = useAuth();
+  const location = useLocation();
 
+  // Show loading state while checking auth
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#FF6B35]"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
       </div>
     );
   }
 
+  // Redirect to login if not authenticated
   if (!currentUser) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/admin" state={{ from: location.pathname }} replace />;
   }
 
   return <Outlet />;
@@ -100,15 +109,40 @@ const App = () => {
             <div className="min-h-screen flex flex-col">
               <ErrorBoundary>
                 <Routes>
-                  <Route path="/" element={<Index />} />
+                  <Route path="/" element={
+                    <>
+                      <Index />
+                      <Footer />
+                    </>
+                  } />
                   
                   {/* Protected Routes */}
                   <Route element={<ProtectedRoute />}>
-                    <Route path="/orders" element={<OrdersPage />} />
+                    <Route path="/orders" element={
+                      <>
+                        <OrdersPage />
+                        <Footer />
+                      </>
+                    } />
                   </Route>
                   
-                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                  <Route path="*" element={<NotFound />} />
+                  {/* Admin Routes - No footer in admin layout */}
+                  <Route path="/admin" element={<Admin />} />
+                  <Route element={<ProtectedRoute />}>
+                    <Route element={<AdminLayout />}>
+                      <Route path="/admin/dashboard" element={<AdminDashboard />} />
+                      <Route path="/admin/products" element={<ManageProducts />} />
+                      <Route path="/admin/reviews" element={<ManageReviews />} />
+                    </Route>
+                  </Route>
+                  
+                  {/* 404 Page */}
+                  <Route path="*" element={
+                    <>
+                      <NotFound />
+                      <Footer />
+                    </>
+                  } />
                 </Routes>
               </ErrorBoundary>
             </div>

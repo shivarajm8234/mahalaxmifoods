@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { Menu, X, ShoppingCart, User } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Menu, X, ShoppingCart } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
 import { GoogleSignInButton } from "./auth/GoogleSignInButton";
@@ -18,12 +19,30 @@ interface NavbarProps {
 
 export function Navbar({ onCartClick }: NavbarProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
   const { currentUser, loading } = useAuth();
-  const { getCartCount } = useCart();
+  const { items: cartItems, getCartCount } = useCart();
   const cartCount = getCartCount();
 
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 10);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const navClasses = `
+    w-full sticky top-0 z-50 shadow-lg flex items-center justify-center px-4 md:px-8 py-2 font-sans relative
+    transition-all duration-300 ${isScrolled 
+      ? 'bg-white/90 backdrop-blur-md border-b border-white/20' 
+      : 'bg-transparent'}
+    ${isMenuOpen ? 'rounded-b-2xl' : ''}
+  `;
+
   return (
-    <nav className="w-full bg-[#F9F7F1] sticky top-0 z-50 shadow-lg rounded-b-2xl flex items-center justify-center px-4 md:px-8 py-2 border-b-4 border-[#FF6B35] font-sans relative">
+    <nav className={navClasses}>
       {/* Mobile Layout */}
       <div className="lg:hidden w-full flex items-center justify-between gap-x-4">
         {/* Mobile Menu Button */}
@@ -77,27 +96,38 @@ export function Navbar({ onCartClick }: NavbarProps) {
       </div>
 
       {/* Desktop Layout */}
-      <div className="hidden lg:flex w-full items-center justify-between relative overflow-x-auto">
-        {/* Logo - Positioned on the left for desktop */}
-        <div>
-          <div className="text-xl md:text-2xl font-playfair text-[#FF6B35] font-bold" style={{ letterSpacing: '0.02em' }}>
-            <a href="#hero" className="hover:text-[#D7263D] transition-colors duration-150">
-              Shree Mahalaxmi Food Products
-            </a>
-          </div>
-        </div>
+      <div className="hidden lg:flex w-full max-w-7xl mx-auto px-6 items-center justify-between">
+        {/* Brand Name - Left Side */}
+        <a 
+          href="#hero" 
+          className={`text-xl font-playfair font-bold whitespace-nowrap ${
+            isScrolled ? 'text-[#D7263D]' : 'text-white drop-shadow-md'
+          } hover:text-[#D7263D] transition-colors duration-150`}
+        >
+          Shree Mahalaxmi
+        </a>
         
-        {/* Desktop Navigation - Absolutely Centered */}
-        <ul className="flex items-center gap-6 xl:gap-8 text-base xl:text-lg font-medium absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-          {navLinks.map(link => (
-            <li key={link.name}>
-              <a href={link.href} className="hover:text-[#D7263D] transition-colors duration-150 text-[#2F2F2F]">{link.name}</a>
-            </li>
-          ))}
-        </ul>
+        {/* Navigation Links - Center */}
+        <nav className="flex-1 flex justify-center">
+          <ul className="flex items-center gap-8 xl:gap-10 text-base xl:text-lg font-medium">
+            {navLinks.map(link => (
+              <li key={link.name}>
+                <a 
+                  href={link.href} 
+                  className={`relative group hover:text-[#D7263D] transition-colors duration-200 ${
+                    isScrolled ? 'text-[#2F2F2F]' : 'text-white drop-shadow-md'
+                  }`}
+                >
+                  {link.name}
+                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#D7263D] transition-all duration-200 group-hover:w-full"></span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
 
         {/* Desktop Right Side - Cart and User */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 w-1/3 justify-end">
           {/* Cart Icon with Badge */}
           <button
             onClick={onCartClick}

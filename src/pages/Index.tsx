@@ -205,7 +205,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-brand-cream font-sans antialiased flex flex-col">
-      <Navbar cartCount={cartManager.cart.reduce((s, i) => s + i.quantity, 0)} onCartClick={handleCartClick} />
+      <Navbar onCartClick={handleCartClick} />
       <main className="flex-1">
         <Hero onShop={handleShopNow} />
         <ProductsGrid 
@@ -217,66 +217,7 @@ const Index = () => {
         <AboutSection />
         <ContactSection />
       </main>
-      <footer className="w-full text-white pt-16 pb-8 px-4 md:px-8" style={{ background: 'linear-gradient(90deg, #1A2634 50%, #274472 100%)' }}>
-        <div className="container-fluid mx-auto grid grid-cols-1 md:grid-cols-4 gap-8 text-center md:text-left">
-          
-          {/* Left: Company Info */}
-          <div className="flex flex-col items-center md:items-start">
-            <h3 className="text-2xl font-playfair font-bold text-[#FFA500] mb-2">Shree Mahalaxmi</h3>
-            <div className="w-24 h-12 bg-white/10 rounded-lg mb-4 flex items-center justify-center text-xs text-white/50">
-              LOGO
-            </div>
-            <p className="text-sm text-white/70">
-              Authentic Indian spices, crafted with tradition and love. Taste the difference in every meal.
-            </p>
-            
-            <p className="text-xs text-white/50 mt-auto pt-8">
-              &copy; {new Date().getFullYear()} Shree Mahalaxmi Food Products. All Rights Reserved.
-            </p>
-          </div>
 
-          {/* Quick Links */}
-          <div className="flex flex-col items-center">
-            <h4 className="text-lg font-bold uppercase tracking-wider text-[#FFA500] mb-4">Quick Links</h4>
-            <ul className="space-y-2 text-sm mb-6">
-              <li><a href="#hero" className="hover:text-[#FFA500] transition-colors">Home</a></li>
-              <li><a href="#products" className="hover:text-[#FFA500] transition-colors">Products</a></li>
-              <li><a href="#about" className="hover:text-[#FFA500] transition-colors">About Us</a></li>
-              <li><a href="#contact" className="hover:text-[#FFA500] transition-colors">Contact</a></li>
-            </ul>
-             <h4 className="text-lg font-bold uppercase tracking-wider text-[#FFA500] mb-4">Contact Us</h4>
-            <div className="text-sm text-center text-white/70">
-                <p>123 Spice Market Street,<br/>Bangalore, Karnataka 560001</p>
-                <p className="mt-2">+91 98765 43210</p>
-            </div>
-          </div>
-
-          {/* Middle: FSSAI Certification */}
-          <div className="flex flex-col items-center">
-            <h4 className="text-lg font-bold uppercase tracking-wider text-[#FFA500] mb-4">Certification</h4>
-            <div className="bg-white/10 rounded-lg p-4 flex flex-col items-center gap-3">
-              <img 
-                src="/images/fssai.jpg" 
-                alt="FSSAI Certified" 
-                className="w-24 h-24 object-contain"
-              />
-              <div className="text-center">
-                <p className="text-sm font-semibold text-white">FSSAI Certified</p>
-                <p className="text-xs text-white/70">License No: 12345678901234</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Right: Map */}
-          <div className="flex flex-col items-center md:items-end">
-            <h4 className="text-lg font-bold uppercase tracking-wider text-[#FFA500] mb-4">Location</h4>
-            <div className="w-full max-w-sm h-48 bg-gray-800 rounded-2xl overflow-hidden shadow-2xl">
-              <LocationMap />
-            </div>
-          </div>
-
-        </div>
-      </footer>
       <CartDrawer
         open={drawer}
         items={cartManager.cart}

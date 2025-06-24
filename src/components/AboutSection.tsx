@@ -13,7 +13,7 @@ export function AboutSection() {
           data-aos="fade-up"
           data-aos-delay="200"
         >
-          Spicy Masala is on a mission to bring India's legendary spice magic to modern kitchens. Our founder, inspired by a century-old family recipe, started blending small batches in their NYC apartment in 2021. From classic garam masala to bold contemporary twists, every blend is freshly ground, ethically sourced, and shipped with care. We believe in joyful, flavorful, no-shortcut cooking—now just a click away.
+          Shree Mahalaxmi Food Products brings the timeless taste of Indian spices straight from our roots to your kitchen—100% fresh, authentic, and full of flavor. Inspired by traditional recipes and crafted with care, our blends are ethically sourced and free from additives. We believe in pure, joyful, and wholesome cooking—made simple for every home.
         </p>
         <div 
           className="flex flex-row justify-center space-x-5 mt-4"

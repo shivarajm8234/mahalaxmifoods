@@ -13,6 +13,7 @@ import { useAuth } from './AuthContext';
 
 type CartContextType = {
   items: CartItem[];
+  cart: CartItem[]; // Alias for items for backward compatibility
   addToCart: (item: Omit<CartItem, 'quantity'> & { quantity?: number }) => void;
   removeFromCart: (itemId: string) => void;
   updateCartItemQuantity: (itemId: string, quantity: number) => void;
@@ -113,7 +114,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo(() => ({
     items,
-    loading,
+    cart: items, // Alias for backward compatibility
     addToCart,
     removeFromCart,
     updateCartItemQuantity,
@@ -121,17 +122,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     getCartTotal,
     getCartCount,
     checkout,
-  }), [
-    items, 
-    loading, 
-    addToCart, 
-    removeFromCart, 
-    updateCartItemQuantity, 
-    clearCart, 
-    getCartTotal, 
-    getCartCount, 
-    checkout
-  ]);
+  }), [items, addToCart, removeFromCart, updateCartItemQuantity, clearCart, getCartTotal, getCartCount, checkout]);
 
   return (
     <CartContext.Provider value={value}>

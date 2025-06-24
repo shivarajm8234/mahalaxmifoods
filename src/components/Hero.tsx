@@ -1,34 +1,53 @@
-import React from "react";
+import React, { useRef, useEffect } from "react";
 
 export function Hero({ onShop }: { onShop: () => void }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  // Auto-play video
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.play().catch(err => console.log("Autoplay prevented:", err));
+    }
+  }, []);
+
   return (
-    <section
-      id="hero"
-      className="relative w-full flex flex-col items-center justify-center h-screen bg-gradient-to-br from-[#F9F7F1] via-[#FF6B35]/5 to-[#F9F7F1] text-[#2F2F2F] overflow-hidden text-center mx-auto"
-    >
-      <div className="relative z-20 text-center max-w-4xl mx-auto px-4 flex flex-col items-center justify-center h-full -mt-20">
-        <h1 
-          className="text-5xl md:text-6xl lg:text-7xl font-playfair font-bold mb-8 text-[#2F2F2F] mx-auto text-center"
-          data-aos="fade-down"
-          data-aos-delay="200"
-        >
+    <section className="relative w-full h-screen overflow-hidden">
+      {/* Video Background */}
+      <video
+        ref={videoRef}
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="absolute inset-0 w-full h-full object-cover"
+      >
+        <source src="/spices-bg.mp4" type="video/mp4" />
+      </video>
+      
+      {/* Dark overlay */}
+      <div className="absolute inset-0 bg-black/40" />
+
+      {/* Content */}
+      <div className="relative h-full flex flex-col items-center justify-center text-center px-4">
+        <h1 className="text-4xl md:text-6xl font-bold text-white mb-4">
           Tradition in Every Taste
         </h1>
-        <p 
-          className="text-xl md:text-2xl mb-10 text-[#2F2F2F]/90 max-w-2xl mx-auto text-center"
-          data-aos="fade-up"
-          data-aos-delay="400"
-        >
+        <p className="text-xl text-white/90 mb-8 max-w-2xl">
           Experience the rich flavors of traditional Indian masalas, carefully crafted to elevate your culinary creations.
         </p>
         <button
           onClick={onShop}
-          className="bg-[#FF6B35] text-[#F9F7F1] px-10 py-4 rounded-full text-xl font-bold transition-all duration-300 hover:bg-[#D7263D] hover:scale-105 shadow-lg mx-auto block"
-          data-aos="zoom-in"
-          data-aos-delay="600"
+          className="bg-[#FF6B35] hover:bg-[#D7263D] text-white px-8 py-3 rounded-full font-bold transition-colors"
         >
           Shop Now
         </button>
+      </div>
+
+      {/* Scroll indicator */}
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
+        <div className="w-8 h-12 border-4 border-white rounded-full flex justify-center">
+          <div className="w-1 h-3 bg-white mt-2 rounded-full" />
+        </div>
       </div>
     </section>
   );
