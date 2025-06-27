@@ -1,39 +1,46 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { useNavigate, Navigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { UserCircle } from "lucide-react";
+import { UserCircle, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/components/ui/use-toast";
+import { FcGoogle } from "react-icons/fc";
+
+const ADMIN_EMAIL = 'shreemahalaxmi.product@gmail.com';
 
 const Admin = () => {
   const navigate = useNavigate();
-  const { currentUser, login } = useAuth();
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+  const location = useLocation();
+  const { currentUser, isAdmin, loading: authLoading, signInWithGoogle } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Redirect if already logged in
-  if (currentUser) {
-    return <Navigate to="/admin/dashboard" replace />;
+  // Get the redirect location or default to dashboard
+  const from = location.state?.from?.pathname || "/admin/dashboard";
+
+  // Redirect if already logged in as admin
+  useEffect(() => {
+    if (currentUser && isAdmin) {
+      navigate(from, { replace: true });
+    }
+  }, [currentUser, isAdmin, navigate, from]);
+
+  // Show loading state while checking auth
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-indigo-500" />
+      </div>
+    );
   }
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
+  const handleGoogleSignIn = async () => {
+    setIsLoading(true);
     setError("");
 
     try {
-      // Basic client-side validation
-      if (!username.trim() || !password) {
-        throw new Error("Please enter both username and password");
-      }
-
-      // Call the login function from AuthContext
-      await login(username, password);
+      await signInWithGoogle();
       
       // Show success message
       toast({
@@ -41,29 +48,32 @@ const Admin = () => {
         description: "Welcome to the admin dashboard!",
       });
       
-      // Redirect to dashboard
-      navigate("/admin/dashboard");
+      // Redirect to the intended page or dashboard
+      navigate(from, { replace: true });
     } catch (err) {
-      console.error("Login error:", err);
-      setError(err instanceof Error ? err.message : "Failed to log in");
+      console.error("Google sign-in error:", err);
+      const errorMessage = err instanceof Error ? err.message : "Failed to sign in with Google. Please try again.";
+      setError(errorMessage);
       toast({
         title: "Login failed",
-        description: err instanceof Error ? err.message : "Invalid credentials",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-indigo-100 via-pink-50 to-yellow-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 font-sans">
       <Card className="w-full max-w-md shadow-2xl rounded-3xl animate-fade-in-up">
-        <form onSubmit={handleLogin}>
+        <div>
           <CardHeader className="flex flex-col items-center gap-2 pt-8">
             <UserCircle className="h-16 w-16 text-indigo-500 dark:text-indigo-300 mb-2 drop-shadow-lg" />
             <CardTitle className="text-3xl font-extrabold text-black dark:text-white">Admin Login</CardTitle>
-            <CardDescription className="text-gray-600 dark:text-gray-300">Enter your credentials to access the admin panel</CardDescription>
+            <CardDescription className="text-gray-600 dark:text-gray-300 text-center">
+              Only authorized administrators can access this panel
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-6 py-2">
@@ -72,40 +82,43 @@ const Admin = () => {
                   {error}
                 </div>
               )}
-              <div className="space-y-2">
-                <Label htmlFor="username">Username</Label>
-                <Input
-                  id="username"
-                  type="text"
-                  placeholder="Enter username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="bg-white/80 dark:bg-gray-800"
-                  disabled={loading}
-                />
+
+              <div className="space-y-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full flex items-center justify-center gap-2 py-6 border-2"
+                  onClick={handleGoogleSignIn}
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <>
+                      <FcGoogle className="h-5 w-5" />
+                      <span>Sign in with Google</span>
+                    </>
+                  )}
+                </Button>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="Enter password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="bg-white/80 dark:bg-gray-800"
-                  disabled={loading}
-                />
+
+              <div className="relative my-6">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-white dark:bg-gray-900 px-2 text-muted-foreground">
+                    Only for {ADMIN_EMAIL}
+                  </span>
+                </div>
               </div>
-              <Button
-                type="submit"
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-lg font-medium transition-colors duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={loading}
-              >
-                {loading ? 'Signing in...' : 'Sign In'}
-              </Button>
+
+              <p className="text-xs text-center text-gray-500 dark:text-gray-400">
+                You must sign in with the authorized Google account to access the admin panel.
+              </p>
             </div>
           </CardContent>
-        </form>
+        </div>
       </Card>
       <style>{`
         @keyframes fade-in-up {
