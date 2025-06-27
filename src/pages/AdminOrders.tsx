@@ -37,7 +37,7 @@ const AdminOrders = () => {
                   <tr key={order.id} className="border-b last:border-b-0 hover:bg-indigo-50/40 dark:hover:bg-gray-800/40">
                     <td className="px-4 py-2 font-mono text-xs">{order.id}</td>
                     <td className="px-4 py-2">{order.user.name}</td>
-                    <td className="px-4 py-2">{order.user.email}</td>
+                    <td className="px-4 py-2">Admin</td>
                     <td className="px-4 py-2">{order.address}</td>
                     <td className="px-4 py-2">
                       <ul className="list-disc pl-4">

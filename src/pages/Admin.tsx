@@ -102,19 +102,8 @@ const Admin = () => {
                 </Button>
               </div>
 
-              <div className="relative my-6">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-white dark:bg-gray-900 px-2 text-muted-foreground">
-                    Only for {ADMIN_EMAIL}
-                  </span>
-                </div>
-              </div>
-
-              <p className="text-xs text-center text-gray-500 dark:text-gray-400">
-                You must sign in with the authorized Google account to access the admin panel.
+              <p className="text-xs text-center text-gray-500 dark:text-gray-400 mt-4">
+                Only authorized administrators can access this panel
               </p>
             </div>
           </CardContent>
