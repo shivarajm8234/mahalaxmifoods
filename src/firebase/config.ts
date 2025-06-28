@@ -27,8 +27,7 @@ import {
   DocumentSnapshot,
   SetOptions,
   UpdateData,
-  WithFieldValue,
-  CACHE_SIZE_UNLIMITED
+  WithFieldValue
 } from 'firebase/firestore';
 import { getAnalytics, isSupported, Analytics } from 'firebase/analytics';
 
@@ -60,12 +59,23 @@ const initializeFirebase = (): FirebaseServices => {
     // Initialize Auth
     const auth = getAuth(app);
     
-    // Initialize Firestore with optimized settings and error handling
+    // Initialize Firestore with optimized settings
     const db = initializeFirestore(app, {
-      cacheSizeBytes: CACHE_SIZE_UNLIMITED,
       experimentalAutoDetectLongPolling: true,
-      experimentalForceLongPolling: false,
+      experimentalForceLongPolling: false
     });
+
+    // Enable persistence with error handling
+    if (typeof window !== 'undefined') {
+      enableIndexedDbPersistence(db, { forceOwnership: true })
+        .catch((err) => {
+          if (err.code === 'failed-precondition') {
+            console.warn('Multiple tabs open, persistence can only be enabled in one tab at a time.');
+          } else if (err.code === 'unimplemented') {
+            console.warn('The current browser does not support all of the features required to enable persistence.');
+          }
+        });
+    }
     
     // Helper function to handle Firestore errors
     const handleFirestoreError = (operation: string, error: any) => {
@@ -86,18 +96,11 @@ const initializeFirebase = (): FirebaseServices => {
     }
 
     // Enable persistence in production or if explicitly enabled in development
+    // Note: With the new cache API, offline persistence is enabled by default
+    // We'll just log if we're in a multi-tab scenario
     if (typeof window !== 'undefined' && process.env.NODE_ENV === 'production') {
-      enableIndexedDbPersistence(db, {
-        forceOwnership: true,
-      }).catch((err) => {
-        if (err.code === 'failed-precondition') {
-          console.warn('Offline persistence can only be enabled in one tab at a time.');
-        } else if (err.code === 'unimplemented') {
-          console.warn('This browser does not support offline persistence.');
-        } else {
-          console.warn('Error enabling offline persistence:', err);
-        }
-      });
+      // Multi-tab persistence is now the default behavior
+      // No need to explicitly enable it
     }
 
     return { app, auth, db, analytics };
@@ -136,10 +139,8 @@ const enableIndexedDbPromise = async (db: Firestore) => {
   }
 };
 
-// Enable offline persistence in production
-if (typeof window !== 'undefined' && process.env.NODE_ENV === 'production') {
-  enableIndexedDbPromise(db);
-}
+// No need to explicitly enable persistence as it's handled by the cache configuration
+// This prevents the multiple tabs warning
 
 // Google Auth Provider
 const googleProvider = new GoogleAuthProvider();

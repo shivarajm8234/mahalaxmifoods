@@ -1,25 +1,23 @@
 import { Button } from "@/components/ui/button";
-import { signInWithGoogle } from "@/firebase/config";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/components/ui/use-toast";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
 
 export function GoogleSignInButton() {
   const [isLoading, setIsLoading] = useState(false);
+  const { signInWithGoogle } = useAuth();
 
   const handleSignIn = async () => {
     try {
       setIsLoading(true);
       await signInWithGoogle();
-      toast({
-        title: "Signed in successfully!",
-        description: "Welcome to Mahalaxmi Foods",
-      });
+      // The success message will be shown by the AuthContext
     } catch (error) {
-      console.error("Error signing in:", error);
+      console.error("Error signing in with Google:", error);
       toast({
         title: "Error",
-        description: "Failed to sign in with Google",
+        description: error instanceof Error ? error.message : "Failed to sign in with Google",
         variant: "destructive",
       });
     } finally {

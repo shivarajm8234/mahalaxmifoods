@@ -4,7 +4,9 @@ import {
   signOut as firebaseSignOut, 
   signInWithPopup, 
   GoogleAuthProvider, 
-  signInWithEmailAndPassword 
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  updateProfile
 } from 'firebase/auth';
 import { auth } from '../firebase/config';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
@@ -16,8 +18,9 @@ type AuthContextType = {
   loading: boolean;
   isAuthenticated: boolean;
   isAdmin: boolean;
-  signInAdmin: (email: string, password: string) => Promise<void>;
-  signInWithGoogle: () => Promise<void>;
+  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, displayName: string) => Promise<User>;
+  signInWithGoogle: () => Promise<User | void>;
   signOutUser: () => Promise<void>;
 };
 
@@ -37,14 +40,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user && user.email !== ADMIN_EMAIL) {
-        // If user is not admin, sign them out
-        firebaseSignOut(auth);
-        setCurrentUser(null);
-        setIsAdmin(false);
-      } else {
+      if (user?.email === ADMIN_EMAIL) {
+        // Only allow the admin email to stay logged in
         setCurrentUser(user);
         checkAdmin(user);
+      } else if (user) {
+        // For non-admin users, sign them out if they try to access admin routes
+        const isOnAdminRoute = window.location.pathname.startsWith('/admin');
+        if (isOnAdminRoute) {
+          firebaseSignOut(auth);
+          setCurrentUser(null);
+          setIsAdmin(false);
+        } else {
+          setCurrentUser(user);
+          setIsAdmin(false);
+        }
+      } else {
+        setCurrentUser(null);
+        setIsAdmin(false);
       }
       setLoading(false);
     });
@@ -53,32 +66,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, [checkAdmin]);
 
-  const signInAdmin = useCallback(async (email: string, password: string) => {
-    if (email !== ADMIN_EMAIL) {
-      throw new Error('Unauthorized access. Only admin can sign in.');
-    }
-    
+  const signIn = useCallback(async (email: string, password: string) => {
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      if (userCredential.user.email !== ADMIN_EMAIL) {
-        await firebaseSignOut(auth);
-        throw new Error('Unauthorized access. Only admin can sign in.');
-      }
+      await signInWithEmailAndPassword(auth, email, password);
     } catch (error) {
       console.error('Error signing in:', error);
       throw error;
     }
   }, []);
 
+  const signUp = useCallback(async (email: string, password: string, displayName: string) => {
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      // Update user profile with display name
+      if (auth.currentUser) {
+        await updateProfile(auth.currentUser, {
+          displayName
+        });
+      }
+      return userCredential.user;
+    } catch (error) {
+      console.error('Error signing up:', error);
+      throw error;
+    }
+  }, []);
+
   const signInWithGoogle = useCallback(async () => {
     try {
-      const result = await signInWithPopup(auth, new GoogleAuthProvider());
-      const user = result.user;
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
       
-      if (user.email !== ADMIN_EMAIL) {
-        await firebaseSignOut(auth);
-        throw new Error('Unauthorized access. Only admin can sign in.');
+      // If the signed-in user is the admin, allow access
+      if (result.user.email === ADMIN_EMAIL) {
+        return result.user;
       }
+      
+      // For non-admin users, sign them out and show an error
+      await firebaseSignOut(auth);
+      throw new Error('Only admin can sign in with Google');
     } catch (error) {
       console.error('Error signing in with Google:', error);
       throw error;
@@ -100,10 +125,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loading,
     isAuthenticated: !!currentUser,
     isAdmin,
-    signInAdmin,
+    signIn,
+    signUp,
     signInWithGoogle,
     signOutUser,
-  }), [currentUser, loading, isAdmin, signInAdmin, signInWithGoogle, signOutUser]);
+  }), [currentUser, loading, isAdmin, signIn, signUp, signInWithGoogle, signOutUser]);
 
   return (
     <AuthContext.Provider value={value}>

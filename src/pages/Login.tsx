@@ -2,31 +2,35 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
+import { LoginForm } from '@/components/auth/LoginForm';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function Login() {
-  const { currentUser } = useAuth();
+  const { currentUser, isAdmin } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     if (currentUser) {
-      navigate('/');
+      // Redirect to admin dashboard if admin, otherwise to home
+      navigate(isAdmin ? '/admin/dashboard' : '/');
     }
-  }, [currentUser, navigate]);
+  }, [currentUser, isAdmin, navigate]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">Sign in to your account</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center">
+            Welcome to Mahalaxmi Foods
+          </CardTitle>
           <CardDescription className="text-center">
-            Welcome back! Please sign in to continue.
+            Sign in to your account or create a new one
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <GoogleSignInButton />
-          </div>
+        <CardContent className="space-y-6">
+          {/* Login Form */}
+          <LoginForm />
+          
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
               <span className="w-full border-t" />
@@ -37,7 +41,12 @@ export default function Login() {
               </span>
             </div>
           </div>
-          <p className="text-center text-sm text-muted-foreground">
+          
+          <div className="space-y-2">
+            <GoogleSignInButton />
+          </div>
+          
+          <p className="px-4 text-center text-sm text-muted-foreground">
             By continuing, you agree to our{' '}
             <a href="/terms" className="underline underline-offset-4 hover:text-primary">
               Terms of Service
