@@ -3,19 +3,22 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from "react-router-dom";
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
-import { OrdersPage } from "./pages/orders/OrdersPage";
-import Admin from "./pages/Admin";
-import AdminDashboard from "./pages/AdminDashboard";
-import ManageProducts from "./pages/ManageProducts";
-import ManageReviews from "./pages/ManageReviews";
-import { AdminLayout } from "./components/admin/AdminLayout";
-import Footer from "./components/Footer";
+import Index from "@/pages/Index";
+import NotFound from "@/pages/NotFound";
+import { OrdersPage } from "@/pages/orders/OrdersPage";
+import Admin from "@/pages/Admin";
+import AdminDashboard from "@/pages/AdminDashboard";
+import ManageProducts from "@/pages/ManageProducts";
+import ManageReviews from "@/pages/ManageReviews";
+import { AdminLayout } from "@/components/admin/AdminLayout";
+import Footer from "@/components/Footer";
 import AOS from 'aos';
 import 'aos/dist/aos.css';
 import { useEffect, ErrorInfo, Component } from "react";
-import { useAuth } from "./contexts/AuthContext";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { AdminRoute } from "@/components/auth/AdminRoute";
+import { ProductProvider } from "@/contexts/ProductContext";
+import { OrderProvider } from "@/contexts/OrderContext";
 
 // Error Boundary Component
 class ErrorBoundary extends Component<{ children: React.ReactNode }, { hasError: boolean }> {
@@ -64,7 +67,7 @@ const queryClient = new QueryClient({
 });
 
 // Protected route component
-const ProtectedRoute = () => {
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { currentUser, loading } = useAuth();
   const location = useLocation();
 
@@ -82,7 +85,7 @@ const ProtectedRoute = () => {
     return <Navigate to="/admin" state={{ from: location.pathname }} replace />;
   }
 
-  return <Outlet />;
+  return <>{children}</>;
 };
 
 const App = () => {
@@ -105,48 +108,56 @@ const App = () => {
         <TooltipProvider>
           <Toaster />
           <Sonner />
-          <BrowserRouter>
-            <div className="min-h-screen flex flex-col">
-              <ErrorBoundary>
-                <Routes>
-                  <Route path="/" element={
-                    <>
-                      <Index />
-                      <Footer />
-                    </>
-                  } />
-                  
-                  {/* Protected Routes */}
-                  <Route element={<ProtectedRoute />}>
-                    <Route path="/orders" element={
-                      <>
-                        <OrdersPage />
-                        <Footer />
-                      </>
-                    } />
-                  </Route>
-                  
-                  {/* Admin Routes - No footer in admin layout */}
-                  <Route path="/admin" element={<Admin />} />
-                  <Route element={<ProtectedRoute />}>
-                    <Route element={<AdminLayout />}>
-                      <Route path="/admin/dashboard" element={<AdminDashboard />} />
-                      <Route path="/admin/products" element={<ManageProducts />} />
-                      <Route path="/admin/reviews" element={<ManageReviews />} />
-                    </Route>
-                  </Route>
-                  
-                  {/* 404 Page */}
-                  <Route path="*" element={
-                    <>
-                      <NotFound />
-                      <Footer />
-                    </>
-                  } />
-                </Routes>
-              </ErrorBoundary>
-            </div>
-          </BrowserRouter>
+          <AuthProvider>
+            <BrowserRouter>
+              <div className="min-h-screen flex flex-col">
+                <ErrorBoundary>
+                  <ProductProvider>
+                    <OrderProvider>
+                      <Routes>
+                        <Route path="/" element={
+                          <>
+                            <Index />
+                            <Footer />
+                          </>
+                        } />
+                        
+                        {/* Protected Routes */}
+                        <Route element={
+                          <ProtectedRoute>
+                            <OrdersPage />
+                          </ProtectedRoute>
+                        } path="/orders" />
+                        
+                        {/* Public Admin Login */}
+                        <Route path="/admin" element={<Admin />} />
+                        
+                        {/* Protected Admin Routes */}
+                        <Route path="/admin" element={
+                          <AdminRoute>
+                            <AdminLayout />
+                          </AdminRoute>
+                        }>
+                          <Route path="dashboard" element={<AdminDashboard />} />
+                          <Route path="dashboard/analytics" element={<AdminDashboard />} />
+                          <Route path="products" element={<ManageProducts />} />
+                          <Route path="reviews" element={<ManageReviews />} />
+                        </Route>
+
+                        {/* 404 Page */}
+                        <Route path="*" element={
+                          <>
+                            <NotFound />
+                            <Footer />
+                          </>
+                        } />
+                      </Routes>
+                    </OrderProvider>
+                  </ProductProvider>
+                </ErrorBoundary>
+              </div>
+            </BrowserRouter>
+          </AuthProvider>
         </TooltipProvider>
       </QueryClientProvider>
     </ErrorBoundary>

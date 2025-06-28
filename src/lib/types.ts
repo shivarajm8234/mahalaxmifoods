@@ -22,3 +22,37 @@ export interface Review {
   verified?: boolean;
   response?: string;
 }
+
+export interface OrderItem {
+  productId: string;
+  quantity: number;
+  price: number;
+  name?: string;
+  image?: string;
+}
+
+export interface ShippingAddress {
+  name: string;
+  street: string;
+  city: string;
+  state: string;
+  zip: string;
+  country: string;
+  phone?: string;
+  email?: string;
+}
+
+export interface Order {
+  id: string;
+  userId: string;
+  items: OrderItem[];
+  total: number;
+  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'completed';
+  shippingAddress: ShippingAddress;
+  paymentMethod: string;
+  paymentStatus: 'pending' | 'paid' | 'failed' | 'refunded';
+  trackingNumber?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}

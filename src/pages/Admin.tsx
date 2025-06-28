@@ -22,15 +22,37 @@ const Admin = () => {
   // Redirect if already logged in as admin
   useEffect(() => {
     if (currentUser && isAdmin) {
-      navigate(from, { replace: true });
+      // Only navigate if we're not already on the target page and not already on the admin page
+      if (location.pathname === '/admin' || location.pathname === '/admin/') {
+        navigate(from, { replace: true });
+      }
     }
-  }, [currentUser, isAdmin, navigate, from]);
+  }, [currentUser, isAdmin, navigate, from, location.pathname]);
 
   // Show loading state while checking auth
   if (authLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-indigo-500" />
+      </div>
+    );
+  }
+
+  // If already logged in but not an admin, show access denied
+  if (currentUser && !isAdmin) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>Access Denied</CardTitle>
+            <CardDescription>You don't have permission to access the admin panel.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={() => navigate('/')} className="w-full">
+              Return to Home
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }

@@ -6,7 +6,10 @@ import {
   GoogleAuthProvider, 
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
-  updateProfile
+  updateProfile,
+  setPersistence,
+  browserLocalPersistence,
+  browserSessionPersistence
 } from 'firebase/auth';
 import { auth } from '../firebase/config';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
@@ -30,6 +33,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [initialized, setInitialized] = useState(false);
 
   // Check if the current user is the admin
   const checkAdmin = useCallback((user: FirebaseUser | null) => {
@@ -38,32 +42,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return isUserAdmin;
   }, []);
 
+  // Set up auth state persistence and state listener
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user?.email === ADMIN_EMAIL) {
-        // Only allow the admin email to stay logged in
-        setCurrentUser(user);
-        checkAdmin(user);
-      } else if (user) {
-        // For non-admin users, sign them out if they try to access admin routes
-        const isOnAdminRoute = window.location.pathname.startsWith('/admin');
-        if (isOnAdminRoute) {
-          firebaseSignOut(auth);
+    const initializeAuth = async () => {
+      try {
+        await setPersistence(auth, browserLocalPersistence);
+      } catch (error) {
+        console.error('Error setting auth persistence:', error);
+        await setPersistence(auth, browserSessionPersistence);
+      }
+
+      const unsubscribe = onAuthStateChanged(auth, (user) => {
+        if (user) {
+          const isUserAdmin = user.email === ADMIN_EMAIL;
+          setCurrentUser(user);
+          setIsAdmin(isUserAdmin);
+        } else {
           setCurrentUser(null);
           setIsAdmin(false);
-        } else {
-          setCurrentUser(user);
-          setIsAdmin(false);
         }
-      } else {
-        setCurrentUser(null);
-        setIsAdmin(false);
-      }
-      setLoading(false);
-    });
+        setLoading(false);
+        setInitialized(true);
+      });
 
-    // Cleanup subscription on unmount
-    return () => unsubscribe();
+      return () => unsubscribe();
+    };
+
+    initializeAuth();
   }, [checkAdmin]);
 
   const signIn = useCallback(async (email: string, password: string) => {
@@ -96,14 +101,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
       
-      // If the signed-in user is the admin, allow access
-      if (result.user.email === ADMIN_EMAIL) {
-        return result.user;
-      }
+      // Check if user is admin and update state
+      const isUserAdmin = result.user.email === ADMIN_EMAIL;
+      setIsAdmin(isUserAdmin);
       
-      // For non-admin users, sign them out and show an error
-      await firebaseSignOut(auth);
-      throw new Error('Only admin can sign in with Google');
+      return result.user;
     } catch (error) {
       console.error('Error signing in with Google:', error);
       throw error;
@@ -133,7 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 }

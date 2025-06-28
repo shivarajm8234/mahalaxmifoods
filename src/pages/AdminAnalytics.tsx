@@ -1,79 +1,186 @@
-import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
+import { useProducts } from "@/contexts/ProductContext";
+import { useOrders } from "@/contexts/OrderContext";
+import { useEffect, useState } from "react";
+import { Package, ShoppingCart, Star, TrendingUp, Users, DollarSign } from "lucide-react";
 
-const mockData = [
-  { month: 'Jan', products: 10, users: 20, sales: 5000 },
-  { month: 'Feb', products: 15, users: 35, sales: 8000 },
-  { month: 'Mar', products: 20, users: 50, sales: 12000 },
-  { month: 'Apr', products: 25, users: 70, sales: 18000 },
-  { month: 'May', products: 30, users: 90, sales: 25000 },
-  { month: 'Jun', products: 35, users: 120, sales: 32000 },
-  { month: 'Jul', products: 40, users: 150, sales: 40000 },
-  { month: 'Aug', products: 45, users: 180, sales: 47000 },
-  { month: 'Sep', products: 50, users: 210, sales: 54000 },
-  { month: 'Oct', products: 55, users: 250, sales: 60000 },
-  { month: 'Nov', products: 60, users: 300, sales: 70000 },
-  { month: 'Dec', products: 65, users: 350, sales: 80000 },
-];
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
 const AdminAnalytics = () => {
-  const navigate = useNavigate();
+  const { products } = useProducts();
+  const { orders } = useOrders();
+  const [salesData, setSalesData] = useState<Array<{name: string; sales: number}>>([]);
+  const [revenueData, setRevenueData] = useState<Array<{name: string; revenue: number}>>([]);
+  const [productSales, setProductSales] = useState<Array<{name: string; value: number}>>([]);
+
+  useEffect(() => {
+    // Process sales data
+    const monthlySales = processMonthlySales(orders);
+    setSalesData(monthlySales);
+
+    // Process revenue data
+    const monthlyRevenue = processMonthlyRevenue(orders);
+    setRevenueData(monthlyRevenue);
+
+    // Process product sales
+    const topProducts = processProductSales(products, orders);
+    setProductSales(topProducts);
+  }, [orders, products]);
+
+  const processMonthlySales = (orders: any[]) => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const currentMonth = new Date().getMonth();
+    return months.slice(0, currentMonth + 1).map((month, index) => ({
+      name: month,
+      sales: Math.floor(Math.random() * 100) + 20 // Placeholder for actual sales data
+    }));
+  };
+
+  const processMonthlyRevenue = (orders: any[]) => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const currentMonth = new Date().getMonth();
+    return months.slice(0, currentMonth + 1).map((month, index) => ({
+      name: month,
+      revenue: Math.floor(Math.random() * 5000) + 1000 // Placeholder for actual revenue data
+    }));
+  };
+
+  const processProductSales = (products: any[], orders: any[]) => {
+    // Placeholder for actual product sales data
+    return products.slice(0, 5).map((product, index) => ({
+      name: product.title,
+      value: Math.floor(Math.random() * 100) + 10
+    }));
+  };
+
+  const stats = [
+    { title: 'Total Products', value: products.length, icon: <Package className="h-6 w-6" />, trend: '+12%' },
+    { title: 'Total Orders', value: orders.length, icon: <ShoppingCart className="h-6 w-6" />, trend: '+8%' },
+    { title: 'Total Revenue', value: `$${(orders.reduce((sum, order) => sum + (order.total || 0), 0)).toFixed(2)}`, icon: <DollarSign className="h-6 w-6" />, trend: '+15%' },
+    { title: 'Active Users', value: '1,234', icon: <Users className="h-6 w-6" />, trend: '+5%' },
+  ];
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-pink-50 to-yellow-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 font-sans py-10">
-      <div className="max-w-5xl mx-auto bg-white/90 dark:bg-gray-900/80 rounded-2xl shadow-xl p-6 md:p-10">
-        <div className="flex items-center gap-4 mb-8">
-          <Button variant="outline" size="sm" onClick={() => navigate('/admin/dashboard')}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Dashboard
-          </Button>
-          <h2 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-pink-500 to-yellow-500 ml-2">Analytics</h2>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-          <div>
-            <h3 className="text-xl font-bold mb-4 text-indigo-700 dark:text-indigo-300">Monthly Product Growth</h3>
-            <ResponsiveContainer width="100%" height={250}>
-              <LineChart data={mockData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+    <div className="container mx-auto p-6 space-y-6">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {stats.map((stat, index) => (
+          <Card key={index}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                {stat.title}
+              </CardTitle>
+              <div className="h-4 w-4 text-muted-foreground">
+                {stat.icon}
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stat.value}</div>
+              <p className="text-xs text-muted-foreground flex items-center">
+                <TrendingUp className="h-3 w-3 mr-1 text-green-500" />
+                {stat.trend} from last month
+              </p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Monthly Sales</CardTitle>
+          </CardHeader>
+          <CardContent className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={salesData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
+                <XAxis dataKey="name" />
                 <YAxis />
                 <Tooltip />
                 <Legend />
-                <Line type="monotone" dataKey="products" stroke="#6366f1" strokeWidth={3} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-          <div>
-            <h3 className="text-xl font-bold mb-4 text-pink-700 dark:text-pink-300">Monthly User Growth</h3>
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={mockData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="users" fill="#ec4899" />
+                <Bar dataKey="sales" fill="#8884d8" name="Sales" />
               </BarChart>
             </ResponsiveContainer>
-          </div>
-        </div>
-        <div className="mt-12">
-          <h3 className="text-xl font-bold mb-4 text-yellow-700 dark:text-yellow-300">Monthly Sales (₹)</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={mockData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Line type="monotone" dataKey="sales" stroke="#f59e42" strokeWidth={3} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Revenue Overview</CardTitle>
+          </CardHeader>
+          <CardContent className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={revenueData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Line type="monotone" dataKey="revenue" stroke="#82ca9d" name="Revenue ($)" />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Top Selling Products</CardTitle>
+          </CardHeader>
+          <CardContent className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={productSales}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                  nameKey="name"
+                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                >
+                  {productSales.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Orders</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {orders.slice(0, 5).map((order) => (
+                <div key={order.id} className="flex items-center justify-between p-2 border rounded-lg">
+                  <div>
+                    <p className="font-medium">Order #{order.id.slice(0, 8)}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {new Date(order.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-medium">${order.total?.toFixed(2)}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {order.status || 'Processing'}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
 };
 
-export default AdminAnalytics; 
+export default AdminAnalytics;
