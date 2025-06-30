@@ -1,6 +1,5 @@
 import { doc, getDoc, setDoc, serverTimestamp, collection, arrayUnion, updateDoc } from 'firebase/firestore';
 import { db } from '@/firebase/config';
-import { processRazorpayPayment, createRazorpayOrder, verifyRazorpayPayment } from './razorpayUtils';
 
 export interface CheckoutResult {
   success: boolean;
@@ -194,109 +193,23 @@ export const checkout = async (cart: CartItem[], userId: string, userData: {
       updatedAt: serverTimestamp(),
     };
 
-    // Save order to Firestore first
+    // Save order to Firestore
     await setDoc(orderRef, orderData);
     console.log('Order created in Firestore:', orderId);
 
-    // Process payment if payment method is online
     if (userData.paymentMethod === 'online') {
-      const receipt = `order_${orderId}`;
+      // For online payments, update status to payment_pending
+      await updateDoc(orderRef, {
+        status: 'payment_pending',
+        paymentStatus: 'pending',
+        updatedAt: serverTimestamp(),
+      });
       
-      try {
-        // Create Razorpay order
-        console.log('Creating Razorpay order...');
-        const razorpayOrder = await createRazorpayOrder(orderTotal, receipt);
-        console.log('Razorpay order created:', razorpayOrder.id);
-        
-        // Process payment
-        console.log('Processing payment...');
-        const paymentResult = await new Promise<{ success: boolean; error?: string }>((resolve) => {
-          processRazorpayPayment(
-            razorpayOrder.id,
-            orderTotal,
-            receipt,
-            userData,
-            async (paymentId) => {
-              console.log('Payment successful, verifying...');
-              try {
-                // Verify payment (in a real app, this would be done on your backend)
-                const isPaymentVerified = await verifyRazorpayPayment(
-                  razorpayOrder.id,
-                  paymentId,
-                  '' // In a real app, you would pass the signature here
-                );
-                
-                if (isPaymentVerified) {
-                  console.log('Payment verified, updating order status...');
-                  // Update order status to confirmed
-                  await updateDoc(orderRef, {
-                    status: 'confirmed',
-                    paymentStatus: 'completed',
-                    paymentId,
-                    updatedAt: serverTimestamp(),
-                  });
-                  
-                  // Update user's orders array
-                  const userRef = doc(db, 'users', userId);
-                  await updateDoc(userRef, {
-                    orders: arrayUnion(orderId),
-                    updatedAt: serverTimestamp(),
-                  });
-                  
-                  // Clear cart
-                  await saveCartToFirestore([], userId);
-                  saveCartToLocal([]);
-                  
-                  console.log('Order completed successfully');
-                  resolve({ success: true });
-                } else {
-                  throw new Error('Payment verification failed');
-                }
-              } catch (error) {
-                console.error('Error processing payment:', error);
-                // Update order status to failed
-                await updateDoc(orderRef, {
-                  status: 'payment_failed',
-                  paymentStatus: 'failed',
-                  error: error instanceof Error ? error.message : 'Payment processing error',
-                  updatedAt: serverTimestamp(),
-                });
-                resolve({ 
-                  success: false, 
-                  error: error instanceof Error ? error.message : 'Payment processing failed' 
-                });
-              }
-            },
-            async (error) => {
-              console.error('Payment error:', error);
-              // Update order status to failed
-              await updateDoc(orderRef, {
-                status: 'payment_failed',
-                paymentStatus: 'failed',
-                error: error.message || 'Payment was not completed',
-                updatedAt: serverTimestamp(),
-              });
-              resolve({ 
-                success: false, 
-                error: error.message || 'Payment was not completed' 
-              });
-            }
-          );
-        });
-        
-        if (!paymentResult.success) {
-          throw new Error(paymentResult.error || 'Payment processing failed');
-        }
-      } catch (error) {
-        console.error('Error in payment processing:', error);
-        await updateDoc(orderRef, {
-          status: 'payment_failed',
-          paymentStatus: 'failed',
-          error: error instanceof Error ? error.message : 'Payment processing error',
-          updatedAt: serverTimestamp(),
-        });
-        throw error;
-      }
+      // Return success - frontend will handle the redirect to Razorpay
+      return {
+        success: true,
+        orderId,
+      };
     } else {
       // For cash on delivery
       console.log('Processing cash on delivery order...');
@@ -321,7 +234,7 @@ export const checkout = async (cart: CartItem[], userId: string, userData: {
     
     return { 
       success: true, 
-      orderId: orderRef.id 
+      orderId 
     };
   } catch (error) {
     console.error('Error during checkout:', error);

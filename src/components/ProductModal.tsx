@@ -120,12 +120,15 @@ export function ProductModal({ product, open, onClose, onAddToCart, reviews, onA
                         +
                       </button>
                     </div>
-                    <button
-                      onClick={handleAddToCart}
-                      className="w-auto px-6 py-2 bg-[#D7263D] hover:bg-[#FF6B35] text-[#F9F7F1] font-bold rounded-xl transition-all duration-300 shadow-lg text-sm md:text-base touch-manipulation"
+                    <a
+                      href="https://rzp.io/rzp/RJ0rXaHz"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-auto px-6 py-2 bg-[#4CAF50] hover:bg-[#45a049] text-white font-bold rounded-xl transition-all duration-300 shadow-lg text-sm md:text-base touch-manipulation text-center"
                     >
-                      Add to Cart
-                    </button>
+                      Buy Now
+                    </a>
                   </div>
                 </div>
               </div>

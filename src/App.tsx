@@ -19,7 +19,6 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { AdminRoute } from "@/components/auth/AdminRoute";
 import { ProductProvider } from "@/contexts/ProductContext";
 import { OrderProvider } from "@/contexts/OrderContext";
-import TestPayment from "@/components/TestPayment";
 
 // Error Boundary Component
 class ErrorBoundary extends Component<{ children: React.ReactNode }, { hasError: boolean }> {
@@ -147,9 +146,6 @@ const App = () => {
                           <Route path="reviews" element={<ManageReviews />} />
                         </Route>
                         
-                        {/* Test Payment Route */}
-                        <Route path="/test-payment" element={<TestPayment />} />
-
                         {/* 404 Page */}
                         <Route path="*" element={
                           <>

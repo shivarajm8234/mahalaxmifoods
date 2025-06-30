@@ -5,7 +5,6 @@ import { ProductsGrid } from "@/components/ProductsGrid";
 import { CartDrawer } from "@/components/CartDrawer";
 import { AboutSection } from "@/components/AboutSection";
 import { ContactSection } from "@/components/ContactSection";
-import { LocationMap } from "@/components/LocationMap";
 import { CartItem as LibCartItem, Product, Review } from "@/lib/types";
 import { CartItem as UtilsCartItem } from "@/utils/cartUtils";
 import { productToCartItem, toLibCartItem } from "@/utils/typeConverters";
@@ -193,7 +192,6 @@ const Index = () => {
         />
         <AboutSection />
         <ContactSection />
-        <LocationMap />
       </main>
 
       <CartDrawer

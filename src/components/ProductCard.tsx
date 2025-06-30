@@ -36,19 +36,20 @@ export function ProductCard({
           {product.title}
         </h3>
         <p className="text-sm text-[#2F2F2F] mb-2 leading-tight transition-opacity duration-300 group-hover:opacity-80">{product.description}</p>
-        <div className="mt-auto flex justify-between items-center">
-          <span className="text-lg font-bold text-[#FF6B35] transition-transform duration-300 group-hover:scale-110">₹{product.price.toFixed(2)}</span>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onAddToCart(product);
-            }}
-            className="px-4 py-1 rounded-full bg-[#D7263D] text-[#F9F7F1] font-bold transition-all duration-300 hover:bg-[#FF6B35] hover:scale-110 border-2 border-[#D7263D] hover:border-[#FF6B35]"
-            aria-label={`Add ${product.title} to cart`}
-          >
-            Add to Cart
-          </button>
+        <div className="mt-auto flex flex-col gap-2">
+          <div className="flex justify-between items-center">
+            <span className="text-lg font-bold text-[#FF6B35] transition-transform duration-300 group-hover:scale-110">₹{product.price.toFixed(2)}</span>
+            <a
+              href="https://rzp.io/rzp/RJ0rXaHz"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="px-4 py-1 rounded-full bg-[#4CAF50] text-white font-bold transition-all duration-300 hover:bg-[#45a049] hover:scale-110 border-2 border-[#4CAF50] hover:border-[#45a049] whitespace-nowrap"
+              aria-label={`Buy ${product.title} now`}
+            >
+              Buy Now
+            </a>
+          </div>
         </div>
       </div>
     </div>
