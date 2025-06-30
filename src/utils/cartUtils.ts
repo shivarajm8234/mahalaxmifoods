@@ -1,5 +1,12 @@
-import { doc, getDoc, setDoc, serverTimestamp, collection, writeBatch, arrayUnion } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp, collection, arrayUnion, updateDoc } from 'firebase/firestore';
 import { db } from '@/firebase/config';
+import { processRazorpayPayment, createRazorpayOrder, verifyRazorpayPayment } from './razorpayUtils';
+
+export interface CheckoutResult {
+  success: boolean;
+  orderId?: string;
+  error?: string;
+}
 
 export interface CartItem {
   id: string;
@@ -152,50 +159,175 @@ export const clearCart = async (userId?: string): Promise<void> => {
   }
 };
 
-export const checkout = async (cart: CartItem[], userId: string, userData: any) => {
+export const checkout = async (cart: CartItem[], userId: string, userData: {
+  name?: string;
+  email?: string;
+  phone?: string;
+  shippingAddress?: string;
+  paymentMethod?: 'online' | 'cod';
+}): Promise<CheckoutResult> => {
   try {
     if (!cart.length) {
       throw new Error('Cart is empty');
     }
 
-    const batch = writeBatch(db);
     const orderRef = doc(collection(db, 'orders'));
+    const orderId = orderRef.id;
+    const orderTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    
+    // Create order data
     const orderData = {
+      id: orderId,
       userId,
       items: cart,
-      total: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+      total: orderTotal,
       status: 'pending',
-      shippingAddress: userData.shippingAddress,
-      paymentMethod: userData.paymentMethod,
+      customerInfo: {
+        name: userData.name || '',
+        email: userData.email || '',
+        phone: userData.phone || '',
+      },
+      shippingAddress: userData.shippingAddress || '',
+      paymentMethod: userData.paymentMethod || 'online',
+      paymentStatus: 'pending',
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     };
 
-    // Add order to orders collection
-    batch.set(orderRef, orderData);
+    // Save order to Firestore first
+    await setDoc(orderRef, orderData);
+    console.log('Order created in Firestore:', orderId);
 
-    // Update user's orders array
-    const userRef = doc(db, 'users', userId);
-    batch.update(userRef, {
-      orders: arrayUnion(orderRef.id),
-      updatedAt: serverTimestamp(),
-    });
-
-    // Clear cart
-    batch.update(userRef, { cart: [] });
+    // Process payment if payment method is online
+    if (userData.paymentMethod === 'online') {
+      const receipt = `order_${orderId}`;
+      
+      try {
+        // Create Razorpay order
+        console.log('Creating Razorpay order...');
+        const razorpayOrder = await createRazorpayOrder(orderTotal, receipt);
+        console.log('Razorpay order created:', razorpayOrder.id);
+        
+        // Process payment
+        console.log('Processing payment...');
+        const paymentResult = await new Promise<{ success: boolean; error?: string }>((resolve) => {
+          processRazorpayPayment(
+            razorpayOrder.id,
+            orderTotal,
+            receipt,
+            userData,
+            async (paymentId) => {
+              console.log('Payment successful, verifying...');
+              try {
+                // Verify payment (in a real app, this would be done on your backend)
+                const isPaymentVerified = await verifyRazorpayPayment(
+                  razorpayOrder.id,
+                  paymentId,
+                  '' // In a real app, you would pass the signature here
+                );
+                
+                if (isPaymentVerified) {
+                  console.log('Payment verified, updating order status...');
+                  // Update order status to confirmed
+                  await updateDoc(orderRef, {
+                    status: 'confirmed',
+                    paymentStatus: 'completed',
+                    paymentId,
+                    updatedAt: serverTimestamp(),
+                  });
+                  
+                  // Update user's orders array
+                  const userRef = doc(db, 'users', userId);
+                  await updateDoc(userRef, {
+                    orders: arrayUnion(orderId),
+                    updatedAt: serverTimestamp(),
+                  });
+                  
+                  // Clear cart
+                  await saveCartToFirestore([], userId);
+                  saveCartToLocal([]);
+                  
+                  console.log('Order completed successfully');
+                  resolve({ success: true });
+                } else {
+                  throw new Error('Payment verification failed');
+                }
+              } catch (error) {
+                console.error('Error processing payment:', error);
+                // Update order status to failed
+                await updateDoc(orderRef, {
+                  status: 'payment_failed',
+                  paymentStatus: 'failed',
+                  error: error instanceof Error ? error.message : 'Payment processing error',
+                  updatedAt: serverTimestamp(),
+                });
+                resolve({ 
+                  success: false, 
+                  error: error instanceof Error ? error.message : 'Payment processing failed' 
+                });
+              }
+            },
+            async (error) => {
+              console.error('Payment error:', error);
+              // Update order status to failed
+              await updateDoc(orderRef, {
+                status: 'payment_failed',
+                paymentStatus: 'failed',
+                error: error.message || 'Payment was not completed',
+                updatedAt: serverTimestamp(),
+              });
+              resolve({ 
+                success: false, 
+                error: error.message || 'Payment was not completed' 
+              });
+            }
+          );
+        });
+        
+        if (!paymentResult.success) {
+          throw new Error(paymentResult.error || 'Payment processing failed');
+        }
+      } catch (error) {
+        console.error('Error in payment processing:', error);
+        await updateDoc(orderRef, {
+          status: 'payment_failed',
+          paymentStatus: 'failed',
+          error: error instanceof Error ? error.message : 'Payment processing error',
+          updatedAt: serverTimestamp(),
+        });
+        throw error;
+      }
+    } else {
+      // For cash on delivery
+      console.log('Processing cash on delivery order...');
+      await updateDoc(orderRef, {
+        status: 'confirmed',
+        paymentStatus: 'pending',
+        updatedAt: serverTimestamp(),
+      });
+      
+      // Update user's orders array
+      const userRef = doc(db, 'users', userId);
+      await updateDoc(userRef, {
+        orders: arrayUnion(orderId),
+        updatedAt: serverTimestamp(),
+      });
+      
+      // Clear cart
+      await saveCartToFirestore([], userId);
+      saveCartToLocal([]);
+      console.log('Cash on delivery order completed');
+    }
     
-    // Commit the batch
-    await batch.commit();
-    
-    // Clear local cart
-    saveCartToLocal([]);
-    
-    return { success: true, orderId: orderRef.id };
+    return { 
+      success: true, 
+      orderId: orderRef.id 
+    };
   } catch (error) {
     console.error('Error during checkout:', error);
     return { 
       success: false, 
-      error: error instanceof Error ? error.message : 'An unknown error occurred' 
+      error: error instanceof Error ? error.message : 'An unknown error occurred during checkout' 
     };
   }
 };

@@ -6,12 +6,14 @@ import { CartDrawer } from "@/components/CartDrawer";
 import { AboutSection } from "@/components/AboutSection";
 import { ContactSection } from "@/components/ContactSection";
 import { LocationMap } from "@/components/LocationMap";
-import { CartItem, Product, Review } from "@/lib/types";
+import { CartItem as LibCartItem, Product, Review } from "@/lib/types";
+import { CartItem as UtilsCartItem } from "@/utils/cartUtils";
+import { productToCartItem, toLibCartItem } from "@/utils/typeConverters";
 import MasalaChatBot from "@/components/MasalaChatBot";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "@/hooks/use-toast";
+import { useCart } from "@/contexts/CartContext";
 
-const LOCAL_CART = "spicy-masala-cart";
 const LOCAL_REVIEWS = "spicy-masala-reviews";
 
 // Sample review data
@@ -50,79 +52,9 @@ const initialReviews: Review[] = [
   }
 ];
 
-function useCart(setDrawer: (open: boolean) => void) {
-  const [cart, setCart] = React.useState<CartItem[]>([]);
-
-  React.useEffect(() => {
-    const raw = localStorage.getItem(LOCAL_CART);
-    if (raw) setCart(JSON.parse(raw));
-  }, []);
-
-  React.useEffect(() => {
-    localStorage.setItem(LOCAL_CART, JSON.stringify(cart));
-  }, [cart]);
-
-  function addItem(product: Product, quantity: number = 1) {
-    setCart((current) => {
-      const idx = current.findIndex(i => i.product.id === product.id);
-      if (idx < 0) return [...current, { product, quantity }];
-      const cloned = [...current];
-      cloned[idx].quantity += quantity;
-      return cloned;
-    });
-    
-    // Show toast notification
-    const message = quantity === 1 
-      ? `${product.title} added to cart!`
-      : `${quantity}x ${product.title} added to cart!`;
-    
-    toast({
-      title: "Added to Cart! 🛒",
-      description: message,
-      className: "bg-[#6FBF73] border-[#6FBF73] text-white cursor-pointer hover:bg-[#5A9F5E] transition-colors",
-      duration: 3000,
-      onClick: () => setDrawer(true),
-    });
-  }
-  function updateQty(productId: string, qty: number) {
-    setCart((current) =>
-      current.map(item =>
-        item.product.id === productId ? { ...item, quantity: Math.max(1, qty) } : item
-      )
-    );
-  }
-  function remove(id: string) {
-    setCart((current) => {
-      const itemToRemove = current.find(item => item.product.id === id);
-      const newCart = current.filter(item => item.product.id !== id);
-      
-      // Show toast notification
-      if (itemToRemove) {
-        toast({
-          title: "Removed from Cart",
-          description: `${itemToRemove.product.title} removed from cart`,
-          className: "bg-[#D7263D] border-[#D7263D] text-white cursor-pointer hover:bg-[#B91C3A] transition-colors",
-          duration: 3000,
-          onClick: () => setDrawer(true),
-        });
-      }
-      
-      return newCart;
-    });
-  }
-  function clear() {
-    setCart([]);
-    toast({
-      title: "Order Placed! 🎉",
-      description: "Thank you for your order. We'll process it soon!",
-      className: "bg-[#FF6B35] border-[#FF6B35] text-white cursor-pointer hover:bg-[#E55A2B] transition-colors",
-      duration: 3000,
-      onClick: () => setDrawer(true),
-    });
-  }
-
-  return { cart, addItem, updateQty, remove, clear };
-}
+// Helper function to get the display name of a product
+const getProductName = (product: Product | string) => 
+  typeof product === 'string' ? product : product.title;
 
 function useReviews() {
   const [reviews, setReviews] = React.useState<Review[]>(initialReviews);
@@ -173,61 +105,120 @@ function useReviews() {
 }
 
 const Index = () => {
-  const [drawer, setDrawer] = React.useState(false);
-  const [loading, setLoading] = React.useState(false);
-  const cartManager = useCart(setDrawer);
-  const reviewManager = useReviews();
+  const [drawerOpen, setDrawerOpen] = React.useState(false);
+  const { 
+    items: cart, 
+    addToCart, 
+    updateCartItemQuantity, 
+    removeFromCart, 
+    checkout,
+    getCartCount 
+  } = useCart();
+  const { reviews, addReview } = useReviews();
   const isMobile = useIsMobile();
+  
+  // Calculate total items in cart
+  const cartItemCount = getCartCount();
 
-  function handleShopNow() {
-    window.scrollTo({ top: document.getElementById('products')?.offsetTop || 500, behavior: 'smooth' });
-  }
-  function handleCheckout() {
-    setLoading(true);
+  const handleShopNow = () => {
+    const productsSection = document.getElementById('products');
+    if (productsSection) {
+      productsSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const handleAddToCart = (product: Product, quantity: number = 1) => {
+    const cartItem = productToCartItem(product, quantity);
+    addToCart(cartItem);
     toast({
-      title: "Processing Order...",
-      description: "Please wait while we process your order",
-      className: "bg-[#FF6B35] border-[#FF6B35] text-white cursor-pointer hover:bg-[#E55A2B] transition-colors",
+      title: "Added to Cart! 🛒",
+      description: `${product.title} has been added to your cart.`,
+      className: "bg-green-500 text-white",
       duration: 3000,
-      onClick: () => setDrawer(true),
     });
-    setTimeout(() => {
-      setLoading(false);
-      cartManager.clear();
-      setDrawer(false);
-      // Toast via CartDrawer/Button already handled
-    }, 1200);
-  }
+    setDrawerOpen(true);
+  };
+
+  const handleCheckout = async (userData: any) => {
+    try {
+      const result = await checkout({
+        ...userData,
+        items: cart.map(item => ({
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          image: item.image
+        }))
+      });
+
+      if (result.success) {
+        toast({
+          title: "Order Placed! 🎉",
+          description: "Thank you for your order. We'll process it soon!",
+          className: "bg-green-500 text-white"
+        });
+        return { success: true };
+      } else {
+        throw new Error(result.error || "Failed to process order");
+      }
+    } catch (error) {
+      console.error('Checkout error:', error);
+      toast({
+        title: "Checkout Failed",
+        description: error instanceof Error ? error.message : "An error occurred during checkout",
+        variant: "destructive"
+      });
+      throw error;
+    }
+  };
 
   const handleCartClick = () => {
-    setDrawer(!drawer); // Toggle the drawer state
+    setDrawerOpen(prev => !prev);
   };
 
   return (
     <div className="min-h-screen bg-brand-cream font-sans antialiased flex flex-col">
-      <Navbar onCartClick={handleCartClick} />
+      <Navbar 
+        onCartClick={handleCartClick} 
+        cartItemCount={cartItemCount}
+      />
+      
       <main className="flex-1">
         <Hero onShop={handleShopNow} />
         <ProductsGrid 
-          onAddToCart={cartManager.addItem} 
-          reviews={reviewManager.reviews}
-          onAddReview={reviewManager.addReview}
+          onAddToCart={handleAddToCart} 
+          reviews={reviews}
+          onAddReview={addReview}
         />
-
         <AboutSection />
         <ContactSection />
+        <LocationMap />
       </main>
 
       <CartDrawer
-        open={drawer}
-        items={cartManager.cart}
-        onUpdateQty={cartManager.updateQty}
-        onRemove={cartManager.remove}
-        onClose={() => setDrawer(!drawer)}
+        open={drawerOpen}
+        items={cart.map(utilsItem => {
+          // Create a minimal product object to satisfy the LibCartItem type
+          const product: Product = {
+            id: utilsItem.id,
+            title: utilsItem.name,
+            description: utilsItem.description || '',
+            price: utilsItem.price,
+            image: utilsItem.image || '',
+          };
+          return {
+            product,
+            quantity: utilsItem.quantity
+          };
+        })}
+        onUpdateQty={updateCartItemQuantity}
+        onRemove={removeFromCart}
+        onClose={() => setDrawerOpen(false)}
         onCheckout={handleCheckout}
-        loading={loading}
+        loading={false}
       />
-      {!(isMobile && (drawer || cartManager.cart.length > 0)) && <MasalaChatBot />}
+      {!(isMobile && (drawerOpen || cart.length > 0)) && <MasalaChatBot />}
     </div>
   );
 };

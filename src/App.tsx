@@ -19,6 +19,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { AdminRoute } from "@/components/auth/AdminRoute";
 import { ProductProvider } from "@/contexts/ProductContext";
 import { OrderProvider } from "@/contexts/OrderContext";
+import TestPayment from "@/components/TestPayment";
 
 // Error Boundary Component
 class ErrorBoundary extends Component<{ children: React.ReactNode }, { hasError: boolean }> {
@@ -38,13 +39,15 @@ class ErrorBoundary extends Component<{ children: React.ReactNode }, { hasError:
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen flex items-center justify-center p-4">
-          <div className="text-center max-w-md">
-            <h1 className="text-2xl font-bold mb-4">Something went wrong</h1>
-            <p className="mb-4">We're having trouble loading this page. Please try refreshing.</p>
+        <div className="min-h-screen flex items-center justify-center bg-gray-100">
+          <div className="max-w-md p-8 bg-white rounded-lg shadow-lg text-center">
+            <h1 className="text-2xl font-bold text-red-600 mb-4">Something went wrong</h1>
+            <p className="text-gray-700 mb-4">
+              We're sorry, but an unexpected error occurred. Please try refreshing the page.
+            </p>
             <button
               onClick={() => window.location.reload()}
-              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
             >
               Refresh Page
             </button>
@@ -143,6 +146,9 @@ const App = () => {
                           <Route path="products" element={<ManageProducts />} />
                           <Route path="reviews" element={<ManageReviews />} />
                         </Route>
+                        
+                        {/* Test Payment Route */}
+                        <Route path="/test-payment" element={<TestPayment />} />
 
                         {/* 404 Page */}
                         <Route path="*" element={

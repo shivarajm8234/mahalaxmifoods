@@ -15,9 +15,10 @@ const navLinks = [
 
 interface NavbarProps {
   onCartClick: () => void;
+  cartItemCount: number;
 }
 
-export function Navbar({ onCartClick }: NavbarProps) {
+export function Navbar({ onCartClick, cartItemCount }: NavbarProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const { currentUser, loading } = useAuth();
@@ -71,18 +72,17 @@ export function Navbar({ onCartClick }: NavbarProps) {
         <div className="flex items-center gap-2 pr-2">
           {/* Cart Icon with Badge */}
           <button 
-            onClick={onCartClick} 
-            className="relative p-2 text-[#2F2F2F] hover:text-[#D7263D] transition-colors"
-            aria-label="View cart"
+            onClick={onCartClick}
+            className="p-2 rounded-full hover:bg-gray-100 transition-colors relative"
+            aria-label="Shopping cart"
           >
-            <ShoppingCart className="h-5 w-5" />
-            {cartCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-[#D7263D] text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                {cartCount > 9 ? '9+' : cartCount}
+            <ShoppingCart className="w-6 h-6 text-gray-700" />
+            {cartItemCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                {cartItemCount}
               </span>
             )}
           </button>
-
 
           {/* User Dropdown or Sign In Button */}
           {loading ? (

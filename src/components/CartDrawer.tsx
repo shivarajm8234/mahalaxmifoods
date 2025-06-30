@@ -1,30 +1,23 @@
 import { useEffect, useRef, useState } from 'react';
-import { X, Plus, Minus, ShoppingCart } from 'lucide-react';
+import { X, Plus, Minus, ShoppingCart, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
-import { CartItem, Product } from '@/lib/types';
-
-// Helper function to get the display name of a product
-const getProductName = (product: Product | string) => 
-  typeof product === 'string' ? product : product.title;
-
-// Helper function to get the display price of a product
-const getProductPrice = (product: Product | number) => 
-  typeof product === 'number' ? product : product.price;
-
-// Helper function to get the image URL of a product
-const getProductImage = (product: Product | string) => 
-  typeof product === 'string' ? product : product.image;
+import { CartItem as LibCartItem, Product } from '@/lib/types';
+import { CartItem as UtilsCartItem } from '@/utils/cartUtils';
+import { toLibCartItem } from '@/utils/typeConverters';
+import { CheckoutForm } from './CheckoutForm';
 
 interface CartDrawerProps {
   open: boolean;
-  items: CartItem[];
+  items: LibCartItem[];
   onUpdateQty: (id: string, quantity: number) => void;
   onRemove: (id: string) => void;
   onClose: () => void;
-  onCheckout: () => void;
+  onCheckout: (userData: any) => Promise<{ success: boolean; error?: string }>;
   loading: boolean;
 }
+
+// Helper functions removed as they're no longer needed
 
 export function CartDrawer({
   open,
@@ -35,15 +28,19 @@ export function CartDrawer({
   onCheckout,
   loading = false
 }: CartDrawerProps) {
+  const [showCheckoutForm, setShowCheckoutForm] = useState(false);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const { toast } = useToast();
-  const prevItems = useRef<CartItem[]>([]);
+  const prevItems = useRef<LibCartItem[]>([]);
   const [animateAddId, setAnimateAddId] = useState<string | null>(null);
   const [visible, setVisible] = useState(open);
 
   // Calculate cart total
   const getCartTotal = () => {
-    return items.reduce((total, item) => total + (getProductPrice(item.product) * item.quantity), 0);
+    const total = items.reduce((sum, item) => {
+      return sum + (item.product.price * item.quantity);
+    }, 0);
+    return total;
   };
 
   // Get total number of items in cart
@@ -51,27 +48,37 @@ export function CartDrawer({
     return items.reduce((count, item) => count + item.quantity, 0);
   };
 
-  const handleCheckout = async () => {
+  const handleProceedToCheckout = () => {
+    setShowCheckoutForm(true);
+  };
+
+  const handleBackToCart = () => {
+    setShowCheckoutForm(false);
+  };
+
+  const handleCheckoutSubmit = async (userData: any) => {
     setIsCheckingOut(true);
     try {
-      // Call the onCheckout prop which is passed from the parent component
-      await onCheckout();
-      
-      // Show success toast (parent component might show its own toast as well)
-      toast({
-        title: 'Order placed successfully!',
-        description: 'Your order has been received and is being processed.',
-      });
-      
-      // Close the cart drawer
-      onClose();
+      const result = await onCheckout(userData);
+      if (result.success) {
+        toast({
+          title: 'Order placed successfully!',
+          description: 'Your order has been received and is being processed.',
+          className: 'bg-green-500 text-white',
+        });
+        setShowCheckoutForm(false);
+        onClose();
+      } else {
+        throw new Error(result.error || 'Failed to process order');
+      }
     } catch (error) {
       console.error('Checkout error:', error);
       toast({
         title: 'Error',
-        description: 'There was an error processing your order. Please try again.',
+        description: error instanceof Error ? error.message : 'There was an error processing your order',
         variant: 'destructive',
       });
+      throw error;
     } finally {
       setIsCheckingOut(false);
     }
@@ -167,11 +174,24 @@ export function CartDrawer({
         className={`fixed right-0 top-0 h-full w-full max-w-md bg-white shadow-xl transition-transform duration-300 ease-in-out ${
           open ? 'translate-x-0' : 'translate-x-full'
         }`}
+        onClick={(e) => e.stopPropagation()}
       >
         <div className="flex h-full flex-col">
           {/* Header */}
           <div className="flex items-center justify-between border-b p-4">
-            <h2 className="text-lg font-bold">Your Cart</h2>
+            {showCheckoutForm ? (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleBackToCart}
+                className="rounded-full p-1 text-gray-500 hover:bg-gray-100"
+                aria-label="Back to cart"
+              >
+                <ArrowLeft className="h-6 w-6" />
+              </Button>
+            ) : (
+              <h2 className="text-lg font-bold">Your Cart ({itemCount})</h2>
+            )}
             <Button
               variant="ghost"
               size="icon"
@@ -183,122 +203,144 @@ export function CartDrawer({
             </Button>
           </div>
 
-          {/* Cart Items */}
-          <div className="flex-1 overflow-y-auto p-4">
-            {items.length === 0 ? (
-              <div className="flex h-full flex-col items-center justify-center text-gray-500 p-6 text-center">
-                <ShoppingCart className="mb-4 h-16 w-16 text-gray-300" />
-                <p className="mb-2 text-lg font-medium text-gray-700">Your cart is empty</p>
-                <p className="mb-6 text-sm text-gray-500">Looks like you haven't added anything to your cart yet</p>
-                <Button 
-                  variant="outline" 
-                  onClick={onClose}
-                  className="border-[#FF6B35] text-[#FF6B35] hover:bg-[#FFF5F0] hover:border-[#FF8C5A]"
-                >
-                  Continue Shopping
-                </Button>
-              </div>
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto">
+            {showCheckoutForm ? (
+              <CheckoutForm 
+                onCheckout={handleCheckoutSubmit} 
+                loading={isCheckingOut}
+                onBack={handleBackToCart}
+                cartTotal={total}
+              />
             ) : (
-              <div className="space-y-4">
-                {items.map((item) => {
-                  const productName = getProductName(item.product);
-                  const productPrice = getProductPrice(item.product);
-                  const productImage = getProductImage(item.product);
-                  const itemId = item.product.id;
-                  
-                  return (
-                    <div
-                      key={itemId}
-                      className={`flex items-center gap-4 rounded-lg border p-4 transition-all ${
-                        animateAddId === itemId ? 'bg-green-50' : 'bg-white'
-                      }`}
-                    >
-                      {productImage ? (
-                        <img
-                          src={productImage}
-                          alt={productName}
-                          className="h-16 w-16 rounded-md object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-16 w-16 items-center justify-center rounded-md bg-gray-100">
-                          <ShoppingCart className="h-6 w-6 text-gray-400" />
-                        </div>
-                      )}
-                      <div className="flex-1">
-                        <h3 className="font-medium">{productName}</h3>
-                        <p className="text-sm text-gray-500">₹{productPrice.toFixed(2)}</p>
-                        <div className="mt-2 flex items-center">
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => handleUpdateQuantity(itemId, item.quantity - 1)}
-                            className="h-6 w-6 rounded-r-none border-r-0"
-                            disabled={item.quantity <= 1}
-                          >
-                            <Minus className="h-3 w-3" />
-                          </Button>
-                          <div className="flex h-6 w-8 items-center justify-center border border-gray-300 text-sm">
-                            {item.quantity}
+              <>
+                <div className="p-4">
+                  {items.length === 0 ? (
+                    <div className="flex h-64 flex-col items-center justify-center text-center p-6">
+                      <ShoppingCart className="h-12 w-12 text-gray-300 mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">Your cart is empty</h3>
+                      <p className="text-gray-500 mb-6">Looks like you haven't added anything to your cart yet</p>
+                      <Button 
+                        variant="outline" 
+                        onClick={onClose}
+                        className="border-[#FF6B35] text-[#FF6B35] hover:bg-[#FFF5F0]"
+                      >
+                        Continue Shopping
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {items.map((item) => {
+                        const productName = item.product.title;
+                        const productPrice = item.product.price;
+                        const productImage = item.product.image;
+                        
+                        return (
+                          <div key={item.product.id} className="flex items-start gap-4 border-b pb-4">
+                            <div className="h-20 w-20 flex-shrink-0 overflow-hidden rounded-md border border-gray-200">
+                              {productImage ? (
+                                <img
+                                  src={productImage}
+                                  alt={productName}
+                                  className="h-full w-full object-cover object-center"
+                                />
+                              ) : (
+                                <div className="flex items-center space-x-4">
+                                  {item.product.image && (
+                                    <div className="relative h-16 w-16 overflow-hidden rounded-md">
+                                      <img
+                                        src={item.product.image}
+                                        alt={item.product.title}
+                                        className="h-full w-full object-cover object-center"
+                                      />
+                                    </div>
+                                  )}
+                                  <div className="flex-1 min-w-0">
+                                    <h3 className="text-sm font-medium text-gray-900 truncate">
+                                      {item.product.title}
+                                    </h3>
+                                    <p className="text-sm text-gray-500">
+                                      {item.quantity} x ₹{item.product.price.toFixed(2)}
+                                    </p>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex justify-between">
+                                <h3 className="text-sm font-medium text-gray-900">
+                                  {productName}
+                                </h3>
+                                <p className="ml-4 font-medium text-gray-900">
+                                  ₹{(productPrice * item.quantity).toFixed(2)}
+                                </p>
+                              </div>
+                              <p className="mt-1 text-sm text-gray-500">₹{productPrice.toFixed(2)} each</p>
+                              <div className="mt-2 flex items-center">
+                                <div className="flex items-center border border-gray-300 rounded-md">
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleUpdateQuantity(item.product.id, item.quantity - 1)}
+                                    className="h-8 w-8 p-0 rounded-r-none"
+                                  >
+                                    <Minus className="h-4 w-4" />
+                                  </Button>
+                                  <span className="w-8 text-center text-sm">
+                                    {item.quantity}
+                                  </span>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleUpdateQuantity(item.product.id, item.quantity + 1)}
+                                    className="h-8 w-8 p-0 rounded-l-none"
+                                  >
+                                    <Plus className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => onRemove(item.product.id)}
+                                  className="ml-2 text-red-500 hover:text-red-700 hover:bg-transparent"
+                                >
+                                  Remove
+                                </Button>
+                              </div>
+                            </div>
                           </div>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => handleUpdateQuantity(itemId, item.quantity + 1)}
-                            className="h-6 w-6 rounded-l-none border-l-0"
-                          >
-                            <Plus className="h-3 w-3" />
-                          </Button>
-                        </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {items.length > 0 && (
+                  <div className="border-t border-gray-200 bg-white p-4">
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span>Subtotal</span>
+                        <span>₹{total.toFixed(2)}</span>
                       </div>
-                      <div className="flex flex-col items-end">
-                        <span className="font-medium">
-                          ₹{(productPrice * item.quantity).toFixed(2)}
-                        </span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleRemove(itemId)}
-                          className="h-auto p-0 text-sm text-red-500 hover:bg-transparent hover:text-red-700"
-                        >
-                          Remove
-                        </Button>
+                      <div className="flex justify-between font-medium">
+                        <span>Total</span>
+                        <span>₹{total.toFixed(2)}</span>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
+                    <Button
+                      onClick={handleProceedToCheckout}
+                      className="mt-6 w-full bg-[#FF6B35] hover:bg-[#E55A2B] py-3 text-base"
+                    >
+                      Proceed to Checkout
+                    </Button>
+                  </div>
+                )}
+              </>
             )}
           </div>
-
-          {/* Footer */}
-          {items.length > 0 && (
-            <div className="border-t border-gray-200 p-4 bg-gray-50">
-              <div className="mb-4 flex justify-between text-lg font-semibold">
-                <span className="text-gray-800">Subtotal</span>
-                <span className="text-gray-900">₹{total.toFixed(2)}</span>
-              </div>
-              <p className="mb-4 text-sm text-gray-500 text-center">
-                Shipping & taxes calculated at checkout
-              </p>
-              <Button
-                onClick={handleCheckout}
-                disabled={isCheckingOut}
-                className="w-full bg-[#D7263D] hover:bg-[#FF6B35] text-white font-medium py-3 text-base transition-colors duration-200"
-              >
-                {isCheckingOut ? (
-                  <div className="flex items-center justify-center">
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Processing...
-                  </div>
-                ) : (
-                  'Proceed to Checkout'
-                )}
-              </Button>
-            </div>
-          )}
         </div>
       </div>
     </div>
