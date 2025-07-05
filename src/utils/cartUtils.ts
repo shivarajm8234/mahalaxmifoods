@@ -19,6 +19,11 @@ export interface CartItem {
 
 const CART_STORAGE_KEY = 'cart';
 
+// Debounce mechanism for Firestore updates
+let firestoreUpdateTimeout: NodeJS.Timeout | null = null;
+let pendingCartUpdate: CartItem[] | null = null;
+let pendingUserId: string | null = null;
+
 // Get cart from localStorage
 export const getCart = (): CartItem[] => {
   if (typeof window === 'undefined') return [];
@@ -36,25 +41,53 @@ const getUserCart = async (userId: string): Promise<CartItem[]> => {
   try {
     const userDoc = await getDoc(doc(db, 'users', userId));
     return userDoc.data()?.cart || [];
-  } catch (error) {
+  } catch (error: any) {
+    // Handle permission errors gracefully
+    if (error.code === 'permission-denied' || error.code === 'missing-permissions') {
+      console.warn('Permission denied for user cart. User may not be authenticated or rules may need updating.');
+      return [];
+    }
     console.error('Error getting user cart:', error);
     return [];
   }
 };
 
-// Save cart to Firestore
+// Save cart to Firestore with debouncing
 const saveCartToFirestore = async (cart: CartItem[], userId: string) => {
-  try {
-    const userRef = doc(db, 'users', userId);
-    await setDoc(
-      userRef,
-      { cart, updatedAt: serverTimestamp() },
-      { merge: true }
-    );
-  } catch (error) {
-    console.error('Error saving cart to Firestore:', error);
-    throw error;
+  // Clear existing timeout
+  if (firestoreUpdateTimeout) {
+    clearTimeout(firestoreUpdateTimeout);
   }
+
+  // Store pending update
+  pendingCartUpdate = cart;
+  pendingUserId = userId;
+
+  // Set new timeout for debounced update
+  firestoreUpdateTimeout = setTimeout(async () => {
+    if (pendingCartUpdate && pendingUserId) {
+      try {
+        const userRef = doc(db, 'users', pendingUserId);
+        await setDoc(
+          userRef,
+          { cart: pendingCartUpdate, updatedAt: serverTimestamp() },
+          { merge: true }
+        );
+        console.log('Cart saved to Firestore successfully');
+      } catch (error: any) {
+        // Handle permission errors gracefully
+        if (error.code === 'permission-denied' || error.code === 'missing-permissions') {
+          console.warn('Permission denied for saving cart. User may not be authenticated or rules may need updating.');
+          return; // Don't throw error, just return silently
+        }
+        console.error('Error saving cart to Firestore:', error);
+      } finally {
+        // Clear pending update
+        pendingCartUpdate = null;
+        pendingUserId = null;
+      }
+    }
+  }, 500); // 500ms debounce delay
 };
 
 // Sync cart between localStorage and Firestore
@@ -62,6 +95,14 @@ export const syncCart = async (userId: string): Promise<CartItem[]> => {
   try {
     const localCart = getCart();
     const serverCart = await getUserCart(userId);
+    
+    // If server cart is empty and local cart has items, this might be a new user
+    // or a user switching accounts. Clear the local cart to start fresh.
+    if (serverCart.length === 0 && localCart.length > 0) {
+      console.log('New user detected or account switch. Clearing local cart.');
+      saveCartToLocal([]);
+      return [];
+    }
     
     // Merge carts - prioritize server cart for items that exist in both
     const mergedCart = [...localCart];
@@ -77,7 +118,12 @@ export const syncCart = async (userId: string): Promise<CartItem[]> => {
     await saveCartToFirestore(mergedCart, userId);
     
     return mergedCart;
-  } catch (error) {
+  } catch (error: any) {
+    // Handle permission errors gracefully
+    if (error.code === 'permission-denied' || error.code === 'missing-permissions') {
+      console.warn('Permission denied for cart sync. Using local cart only.');
+      return getCart(); // Fallback to local cart
+    }
     console.error('Error syncing cart:', error);
     return getCart(); // Fallback to local cart
   }
@@ -94,14 +140,19 @@ export const addToCart = async (item: Omit<CartItem, 'quantity'> & { quantity?: 
     cart.push({ ...item, quantity });
   }
 
+  // Save to local storage immediately
   saveCartToLocal(cart);
 
+  // Save to Firestore in background (don't await)
   if (userId) {
-    try {
-      await saveCartToFirestore(cart, userId);
-    } catch (error) {
+    saveCartToFirestore(cart, userId).catch((error: any) => {
+      // Handle permission errors gracefully
+      if (error.code === 'permission-denied' || error.code === 'missing-permissions') {
+        console.warn('Permission denied for updating cart in Firestore. Using local storage only.');
+        return;
+      }
       console.error('Error updating cart in Firestore:', error);
-    }
+    });
   }
 
   return [...cart];
@@ -109,14 +160,20 @@ export const addToCart = async (item: Omit<CartItem, 'quantity'> & { quantity?: 
 
 export const removeFromCart = async (itemId: string, userId?: string): Promise<CartItem[]> => {
   const cart = getCart().filter(item => item.id !== itemId);
+  
+  // Save to local storage immediately
   saveCartToLocal(cart);
 
+  // Save to Firestore in background (don't await)
   if (userId) {
-    try {
-      await saveCartToFirestore(cart, userId);
-    } catch (error) {
+    saveCartToFirestore(cart, userId).catch((error: any) => {
+      // Handle permission errors gracefully
+      if (error.code === 'permission-denied' || error.code === 'missing-permissions') {
+        console.warn('Permission denied for updating cart in Firestore. Using local storage only.');
+        return;
+      }
       console.error('Error updating cart in Firestore:', error);
-    }
+    });
   }
 
   return cart;
@@ -132,14 +189,20 @@ export const updateCartItemQuantity = async (itemId: string, quantity: number, u
   
   if (item) {
     item.quantity = quantity;
+    
+    // Save to local storage immediately
     saveCartToLocal(cart);
 
+    // Save to Firestore in background (don't await)
     if (userId) {
-      try {
-        await saveCartToFirestore(cart, userId);
-      } catch (error) {
+      saveCartToFirestore(cart, userId).catch((error: any) => {
+        // Handle permission errors gracefully
+        if (error.code === 'permission-denied' || error.code === 'missing-permissions') {
+          console.warn('Permission denied for updating cart in Firestore. Using local storage only.');
+          return;
+        }
         console.error('Error updating cart in Firestore:', error);
-      }
+      });
     }
   }
 
@@ -152,9 +215,22 @@ export const clearCart = async (userId?: string): Promise<void> => {
   if (userId) {
     try {
       await saveCartToFirestore([], userId);
-    } catch (error) {
+    } catch (error: any) {
+      // Handle permission errors gracefully
+      if (error.code === 'permission-denied' || error.code === 'missing-permissions') {
+        console.warn('Permission denied for clearing cart in Firestore. Using local storage only.');
+        return;
+      }
       console.error('Error clearing cart in Firestore:', error);
     }
+  }
+};
+
+// Clear cart for new users or when switching accounts
+export const clearCartForNewUser = (): void => {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem(CART_STORAGE_KEY);
+    console.log('Cart cleared for new user');
   }
 };
 

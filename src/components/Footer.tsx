@@ -37,25 +37,12 @@ export function Footer() {
             <li><a href="#products" className="hover:text-[#FFA500] transition-colors block py-1">Products</a></li>
             <li><a href="#about" className="hover:text-[#FFA500] transition-colors block py-1">About Us</a></li>
             <li><a href="#contact" className="hover:text-[#FFA500] transition-colors block py-1">Contact</a></li>
-            <li>
-              <a 
-                href="https://rzp.io/rzp/RJ0rXaHz" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="hover:text-[#FFA500] transition-colors block py-1 flex items-center"
-              >
-                Make a Payment
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                </svg>
-              </a>
-            </li>
           </ul>
           <h4 className="text-lg font-bold uppercase tracking-wider text-[#FFA500] mb-4">Contact Us</h4>
           <div className="text-sm text-center text-white/70">
             <p>Kandhavara<br/>Chikkaballapur, Karnataka</p>
             <p className="mt-2">
-              <a href="tel:080-9823453" className="hover:text-[#FFA500] transition-colors">+91 8297222222</a>
+              <a href="tel:080-9823453" className="hover:text-[#FFA500] transition-colors">+91 8050625634</a>
             </p>
             <p className="mt-2">
               <a href="mailto:info@shreemahalaxmifoods.com" className="hover:text-[#FFA500] transition-colors">info@shreemahalaxmifoods.com</a>
@@ -78,7 +65,7 @@ export function Footer() {
             />
             <div className="text-center">
               <p className="text-sm font-semibold text-white">FSSAI Certified</p>
-              <p className="text-xs text-white/70">License No: 12345678901234</p>
+              <p className="text-xs text-white/70">License No: 11225309000197</p>
             </div>
           </div>
         </div>
