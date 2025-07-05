@@ -10,7 +10,8 @@ import {
   onSnapshot,
   query,
   orderBy,
-  getDocs
+  getDocs,
+  deleteField
 } from "firebase/firestore";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -169,25 +170,32 @@ export function ProductProvider({ children, realtime = false }: ProductProviderP
   }, [realtime]);
 
   const addProduct = async (productData: Omit<Product, 'id' | 'status' | 'createdAt'>) => {
-    const { title, description, price, image, badge } = productData;
-    if (!title || !description || typeof price !== 'number' || !image) {
-      toast({
-        title: "Missing or invalid fields",
-        description: "Please fill in all required product fields.",
-        variant: "destructive",
-      });
-      return false;
-    }
     try {
-      await addDoc(collection(db, "products"), {
-        title,
-        description,
+      const { title, description, price, image, ...rest } = productData;
+      
+      // Validate required fields
+      if (!title?.trim() || !description?.trim() || typeof price !== 'number' || !image?.trim()) {
+        throw new Error("Please fill in all required product fields.");
+      }
+      
+      // Create product data object with only defined and non-empty fields
+      const productDataToSave: Record<string, any> = {
+        title: title.trim(),
+        description: description.trim(),
         price,
-        image,
-        badge: badge || undefined,
+        image: image.trim(),
         status: "active",
         createdAt: new Date().toISOString(),
-      });
+      };
+      
+      // Handle optional fields
+      if (rest.badge?.trim()) {
+        productDataToSave.badge = rest.badge.trim();
+      }
+      
+      // Add the document to Firestore
+      await addDoc(collection(db, "products"), productDataToSave);
+      
       toast({
         title: "Product Added",
         description: `${title} was added successfully.`,
@@ -206,9 +214,18 @@ export function ProductProvider({ children, realtime = false }: ProductProviderP
   };
 
   const updateProduct = async (id: string, productData: Omit<Product, 'id' | 'status'>) => {
-    await updateDoc(doc(db, "products", id), {
-      ...productData,
-    });
+    const updateData: any = { ...productData };
+    
+    // If badge is an empty string, remove it from the update data
+    if ('badge' in updateData && !updateData.badge) {
+      delete updateData.badge;
+      await updateDoc(doc(db, "products", id), {
+        ...updateData,
+        badge: deleteField()
+      });
+    } else {
+      await updateDoc(doc(db, "products", id), updateData);
+    }
   };
 
   const archiveProduct = async (id: string) => {

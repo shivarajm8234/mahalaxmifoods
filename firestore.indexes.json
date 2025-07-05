@@ -27,18 +27,21 @@
           "order": "DESCENDING"
         }
       ]
-    }
-  ],
-  "fieldOverrides": [
+    },
     {
-      "collectionGroup": "users",
-      "fieldPath": "email",
-      "indexes": [
+      "collectionGroup": "products",
+      "queryScope": "COLLECTION",
+      "fields": [
         {
-          "order": "ASCENDING",
-          "queryScope": "COLLECTION"
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
         }
       ]
     }
-  ]
+  ],
+  "fieldOverrides": []
 }
