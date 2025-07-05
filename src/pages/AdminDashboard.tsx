@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Package, ShoppingCart, Star, BarChart2, Plus, ArrowRight } from "lucide-react";
 import AdminAnalytics from "./AdminAnalytics";
+import DashboardStats from "@/components/admin/DashboardStats";
 
 interface DashboardCardProps {
   title: string;
@@ -83,7 +84,7 @@ const AdminDashboard = () => {
         </p>
       </div>
 
-      <Tabs defaultValue={activeTab} className="space-y-4">
+      <Tabs defaultValue={activeTab} className="space-y-6">
         <TabsList>
           <TabsTrigger value="overview" onClick={() => navigate('/admin/dashboard')}>
             Overview
@@ -94,18 +95,28 @@ const AdminDashboard = () => {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="space-y-4">
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {cards.map((card, index) => (
-              <DashboardCard
-                key={index}
-                title={card.title}
-                description={card.description}
-                buttonText={card.buttonText}
-                icon={card.icon}
-                onClick={card.onClick}
-              />
-            ))}
+        <TabsContent value="overview" className="space-y-6">
+          {/* Stats Cards */}
+          <div className="space-y-2">
+            <h2 className="text-xl font-semibold">Overview</h2>
+            <DashboardStats />
+          </div>
+          
+          {/* Quick Actions */}
+          <div className="space-y-2">
+            <h2 className="text-xl font-semibold">Quick Actions</h2>
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {cards.map((card, index) => (
+                <DashboardCard
+                  key={index}
+                  title={card.title}
+                  description={card.description}
+                  buttonText={card.buttonText}
+                  icon={card.icon}
+                  onClick={card.onClick}
+                />
+              ))}
+            </div>
           </div>
         </TabsContent>
 
