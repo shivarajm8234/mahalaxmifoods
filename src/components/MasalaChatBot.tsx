@@ -218,6 +218,15 @@ export function MasalaChatBot() {
       chatRef.current.scrollTop = chatRef.current.scrollHeight;
   }, [messages, open]);
 
+  useEffect(() => {
+    if (!document.getElementById('chatbot-scrollbar-style')) {
+      const style = document.createElement('style');
+      style.id = 'chatbot-scrollbar-style';
+      style.innerHTML = scrollbarStyles;
+      document.head.appendChild(style);
+    }
+  }, []);
+
   function handleSend(e?: React.FormEvent) {
     if (e) e.preventDefault();
     if (!input.trim()) return;
@@ -275,9 +284,11 @@ export function MasalaChatBot() {
                 ref={chatRef}
                 className="flex-1 p-4 overflow-y-auto chat-container"
                 style={{ 
-                  height: '400px',
+                  maxHeight: '70vh',
+                  minHeight: '250px',
                   scrollBehavior: 'smooth',
-                  background: 'linear-gradient(180deg, #FFF9F9 0%, #FFFFFF 100%)'
+                  background: 'linear-gradient(180deg, #FFF9F9 0%, #FFFFFF 100%)',
+                  overscrollBehavior: 'contain',
                 }}
               >
                 <div className="space-y-4">

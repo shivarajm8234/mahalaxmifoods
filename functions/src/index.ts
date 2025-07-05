@@ -210,3 +210,4 @@ app.post('/razorpay-webhook', express.raw({ type: 'application/json' }), (req, r
 // Export the Express app as a Firebase function
 export const api = functions.https.onRequest(app);
 // Firestore rules should be updated in firestore.rules file
+export { getRazorpayKey, createOrder } from './payments';

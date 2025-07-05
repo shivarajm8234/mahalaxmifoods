@@ -6,7 +6,6 @@ import express from 'express';
 import cors from 'cors';
 
 // Initialize Firebase Admin
-admin.initializeApp();
 
 // Initialize Razorpay with live keys from environment variables
 const razorpay = new Razorpay({
@@ -72,13 +71,6 @@ app.post('/webhook', handleWebhook as express.RequestHandler);
 
 // Create Razorpay order
 export const createOrder = functions.https.onCall(async (data, context) => {
-  if (!context.auth) {
-    throw new functions.https.HttpsError(
-      'unauthenticated',
-      'User must be authenticated to create an order'
-    );
-  }
-
   const { amount, currency = 'INR', receipt } = data;
 
   if (!amount) {
@@ -104,6 +96,15 @@ export const createOrder = functions.https.onCall(async (data, context) => {
       error.message
     );
   }
+});
+
+// Get Razorpay Key ID
+export const getRazorpayKey = functions.https.onCall(async (data, context) => {
+  const keyId = process.env.RAZORPAY_KEY_ID || functions.config().razorpay.key_id;
+  if (!keyId) {
+    throw new functions.https.HttpsError('not-found', 'Razorpay Key ID not found');
+  }
+  return { keyId };
 });
 
 // Export the Express app as a Firebase Function

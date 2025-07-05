@@ -162,8 +162,16 @@ export const checkout = async (cart: CartItem[], userId: string, userData: {
   name?: string;
   email?: string;
   phone?: string;
-  shippingAddress?: string;
+  // Accept address fields individually
+  address?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+  country?: string;
   paymentMethod?: 'online' | 'cod';
+  razorpay_payment_id?: string;
+  razorpay_order_id?: string;
+  razorpay_signature?: string;
 }): Promise<CheckoutResult> => {
   try {
     if (!cart.length) {
@@ -174,8 +182,18 @@ export const checkout = async (cart: CartItem[], userId: string, userData: {
     const orderId = orderRef.id;
     const orderTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     
+    // Build shipping address object
+    const shippingAddress = {
+      name: userData.name || '',
+      street: userData.address || '',
+      city: userData.city || '',
+      state: userData.state || '',
+      zip: userData.zip || '',
+      country: userData.country || ''
+    };
+
     // Create order data
-    const orderData = {
+    const orderData: any = {
       id: orderId,
       userId,
       items: cart,
@@ -186,46 +204,67 @@ export const checkout = async (cart: CartItem[], userId: string, userData: {
         email: userData.email || '',
         phone: userData.phone || '',
       },
-      shippingAddress: userData.shippingAddress || '',
+      shippingAddress, // always an object
       paymentMethod: userData.paymentMethod || 'online',
       paymentStatus: 'pending',
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     };
 
+    // Attach Razorpay payment details if present
+    if (userData.razorpay_payment_id) {
+      orderData.razorpay_payment_id = userData.razorpay_payment_id;
+      orderData.razorpay_order_id = userData.razorpay_order_id;
+      orderData.razorpay_signature = userData.razorpay_signature;
+      orderData.paymentStatus = 'paid';
+      orderData.status = 'confirmed';
+    }
+
     // Save order to Firestore
     await setDoc(orderRef, orderData);
     console.log('Order created in Firestore:', orderId);
 
     if (userData.paymentMethod === 'online') {
-      // For online payments, update status to payment_pending
-      await updateDoc(orderRef, {
-        status: 'payment_pending',
-        paymentStatus: 'pending',
-        updatedAt: serverTimestamp(),
-      });
-      
-      // Return success - frontend will handle the redirect to Razorpay
-      return {
-        success: true,
-        orderId,
-      };
+      if (!userData.razorpay_payment_id) {
+        // For online payments, but payment not yet done
+        await updateDoc(orderRef, {
+          status: 'payment_pending',
+          paymentStatus: 'pending',
+          updatedAt: serverTimestamp(),
+        });
+        // Return success - frontend will handle the redirect to Razorpay
+        return {
+          success: true,
+          orderId,
+        };
+      } else {
+        // Payment done, update user's orders array
+        const userRef = doc(db, 'users', userId);
+        await updateDoc(userRef, {
+          orders: arrayUnion(orderId),
+          updatedAt: serverTimestamp(),
+        });
+        // Clear cart
+        await saveCartToFirestore([], userId);
+        saveCartToLocal([]);
+        return {
+          success: true,
+          orderId,
+        };
+      }
     } else {
       // For cash on delivery
-      console.log('Processing cash on delivery order...');
       await updateDoc(orderRef, {
         status: 'confirmed',
         paymentStatus: 'pending',
         updatedAt: serverTimestamp(),
       });
-      
       // Update user's orders array
       const userRef = doc(db, 'users', userId);
       await updateDoc(userRef, {
         orders: arrayUnion(orderId),
         updatedAt: serverTimestamp(),
       });
-      
       // Clear cart
       await saveCartToFirestore([], userId);
       saveCartToLocal([]);

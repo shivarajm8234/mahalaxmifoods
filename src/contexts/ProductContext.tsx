@@ -1,5 +1,18 @@
 import { Product, Order } from "@/lib/types";
 import { createContext, useContext, useState, ReactNode, useEffect } from "react";
+import { db } from "@/firebase/config";
+import {
+  collection,
+  addDoc,
+  doc,
+  updateDoc,
+  deleteDoc,
+  onSnapshot,
+  query,
+  orderBy,
+  getDocs
+} from "firebase/firestore";
+import { useToast } from "@/components/ui/use-toast";
 
 const LOCAL_PRODUCTS = "spicy-masala-products";
 
@@ -57,7 +70,7 @@ const initialProducts: Product[] = [
 
 interface ProductContextType {
   products: Product[];
-  addProduct: (product: Omit<Product, 'id' | 'status' | 'createdAt'>) => void;
+  addProduct: (product: Omit<Product, 'id' | 'status' | 'createdAt'>) => Promise<boolean>;
   updateProduct: (id: string, product: Omit<Product, 'id' | 'status'>) => void;
   archiveProduct: (id: string) => void;
   restoreProduct: (id: string) => void;
@@ -68,82 +81,146 @@ interface ProductContextType {
 
 const ProductContext = createContext<ProductContextType | undefined>(undefined);
 
-export function ProductProvider({ children }: { children: ReactNode }) {
+interface ProductProviderProps {
+  children: ReactNode;
+  realtime?: boolean;
+}
+
+export function ProductProvider({ children, realtime = false }: ProductProviderProps) {
   const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState<Order[]>([
     {
       id: 'order-1',
-      user: { name: 'Rahul Sharma', email: 'rahul@example.com' },
-      address: '123 Main Street, Mumbai, Maharashtra, 400001',
+      userId: 'user-1',
       items: [
-        { productId: 'masala-1', title: 'Pure Turmeric Powder', quantity: 2, price: 11.99 },
-        { productId: 'masala-3', title: 'banana powder', quantity: 1, price: 9.95 }
+        { productId: 'masala-1', name: 'Pure Turmeric Powder', quantity: 2, price: 11.99 },
+        { productId: 'masala-3', name: 'banana powder', quantity: 1, price: 9.95 }
       ],
+      total: 33.93,
+      status: 'pending',
+      shippingAddress: {
+        name: 'Rahul Sharma',
+        street: '123 Main Street',
+        city: 'Mumbai',
+        state: 'Maharashtra',
+        zip: '400001',
+        country: 'India',
+        phone: '9999999999',
+        email: 'rahul@example.com'
+      },
+      paymentMethod: 'cod',
+      paymentStatus: 'pending',
       createdAt: new Date().toISOString(),
-    },
+      updatedAt: new Date().toISOString(),
+      user: { name: 'Rahul Sharma', email: 'rahul@example.com' }
+    }
   ]);
+  const { toast } = useToast();
 
-  // On initial load, try to get products from localStorage.
   useEffect(() => {
-    try {
-      const storedProducts = localStorage.getItem(LOCAL_PRODUCTS);
-      if (storedProducts) {
-        setProducts(JSON.parse(storedProducts));
-      } else {
-        // If no products are stored, use the initial default list.
-        setProducts(initialProducts);
+    if (realtime) {
+      // Real-time updates for admin panel
+      const q = query(collection(db, "products"), orderBy("createdAt", "desc"));
+      try {
+        const unsub = onSnapshot(q, (snapshot) => {
+          setProducts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product)));
+          setLoading(false);
+        }, (error) => {
+          console.error('Error fetching products (realtime):', error);
+          toast({
+            title: "Error",
+            description: "Failed to fetch products. Please refresh or check your connection.",
+            variant: "destructive",
+          });
+          setLoading(false);
+        });
+        return () => unsub();
+      } catch (error) {
+        console.error('Error setting up realtime product listener:', error);
+        toast({
+          title: "Error",
+          description: "Failed to set up product listener.",
+          variant: "destructive",
+        });
+        setLoading(false);
       }
+    } else {
+      // One-time fetch for main website
+      const fetchProducts = async () => {
+        setLoading(true);
+        try {
+          const q = query(collection(db, "products"), orderBy("createdAt", "desc"));
+          const snapshot = await getDocs(q);
+          setProducts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product)));
+        } catch (error) {
+          console.error('Error fetching products:', error);
+          toast({
+            title: "Error",
+            description: "Failed to fetch products. Please refresh or check your connection.",
+            variant: "destructive",
+          });
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchProducts();
+    }
+  }, [realtime]);
+
+  const addProduct = async (productData: Omit<Product, 'id' | 'status' | 'createdAt'>) => {
+    const { title, description, price, image, badge } = productData;
+    if (!title || !description || typeof price !== 'number' || !image) {
+      toast({
+        title: "Missing or invalid fields",
+        description: "Please fill in all required product fields.",
+        variant: "destructive",
+      });
+      return false;
+    }
+    try {
+      await addDoc(collection(db, "products"), {
+        title,
+        description,
+        price,
+        image,
+        badge: badge || undefined,
+        status: "active",
+        createdAt: new Date().toISOString(),
+      });
+      toast({
+        title: "Product Added",
+        description: `${title} was added successfully.`,
+        variant: "default",
+      });
+      return true;
     } catch (error) {
-      console.error("Error reading products from localStorage", error);
-      // If there's an error, fall back to the default list.
-      setProducts(initialProducts);
+      console.error('Error adding product to Firestore:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add product. Please try again.",
+        variant: "destructive",
+      });
+      return false;
     }
-  }, []);
+  };
 
-  // Whenever the 'products' state changes, save it to localStorage.
-  useEffect(() => {
-    // We only save when the products array has been initialized.
-    if (products.length > 0) {
-      localStorage.setItem(LOCAL_PRODUCTS, JSON.stringify(products));
-    }
-  }, [products]);
-
-  const addProduct = (productData: Omit<Product, 'id' | 'status' | 'createdAt'>) => {
-    const newProduct: Product = {
+  const updateProduct = async (id: string, productData: Omit<Product, 'id' | 'status'>) => {
+    await updateDoc(doc(db, "products", id), {
       ...productData,
-      id: `masala-${Date.now()}`,
-      status: 'active',
-      createdAt: new Date().toISOString(),
-    };
-    setProducts(prevProducts => [...prevProducts, newProduct]);
+    });
   };
 
-  const updateProduct = (id: string, productData: Omit<Product, 'id' | 'status'>) => {
-    setProducts(prevProducts =>
-      prevProducts.map(product =>
-        product.id === id ? { ...product, ...productData } : product
-      )
-    );
+  const archiveProduct = async (id: string) => {
+    await updateDoc(doc(db, "products", id), { status: "archived" });
   };
 
-  const archiveProduct = (id: string) => {
-    setProducts(prevProducts =>
-      prevProducts.map(product =>
-        product.id === id ? { ...product, status: 'archived' } : product
-      )
-    );
+  const restoreProduct = async (id: string) => {
+    await updateDoc(doc(db, "products", id), { status: "active" });
   };
 
-  const restoreProduct = (id: string) => {
-    setProducts(prevProducts =>
-      prevProducts.map(product =>
-        product.id === id ? { ...product, status: 'active' } : product
-      )
-    );
-  };
-
-  const deleteProductPermanently = (id: string) => {
-    setProducts(prevProducts => prevProducts.filter(product => product.id !== id));
+  const deleteProductPermanently = async (id: string) => {
+    await deleteDoc(doc(db, "products", id));
   };
 
   const addOrder = (orderData: Omit<Order, 'id' | 'createdAt'>) => {

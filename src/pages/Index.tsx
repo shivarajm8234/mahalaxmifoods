@@ -5,103 +5,14 @@ import { ProductsGrid } from "@/components/ProductsGrid";
 import { CartDrawer } from "@/components/CartDrawer";
 import { AboutSection } from "@/components/AboutSection";
 import { ContactSection } from "@/components/ContactSection";
-import { CartItem as LibCartItem, Product, Review } from "@/lib/types";
+import { CartItem as LibCartItem, Product } from "@/lib/types";
 import { CartItem as UtilsCartItem } from "@/utils/cartUtils";
 import { productToCartItem, toLibCartItem } from "@/utils/typeConverters";
 import MasalaChatBot from "@/components/MasalaChatBot";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "@/hooks/use-toast";
 import { useCart } from "@/contexts/CartContext";
-
-const LOCAL_REVIEWS = "spicy-masala-reviews";
-
-// Sample review data
-const initialReviews: Review[] = [
-  {
-    id: "review-1",
-    productId: "masala-1",
-    userName: "Priya Sharma",
-    rating: 5,
-    comment: "Absolutely amazing! This garam masala transformed my cooking. The aroma is incredible and it tastes just like my grandmother's blend.",
-    createdAt: "2024-06-10T10:30:00Z"
-  },
-  {
-    id: "review-2",
-    productId: "masala-1",
-    userName: "Raj Patel",
-    rating: 4,
-    comment: "Great quality spices. Very authentic taste. Will definitely order again!",
-    createdAt: "2024-06-08T15:45:00Z"
-  },
-  {
-    id: "review-3",
-    productId: "masala-2",
-    userName: "Sarah Johnson",
-    rating: 5,
-    comment: "Perfect for tandoori dishes! The smoky flavor is exactly what I was looking for. Highly recommended.",
-    createdAt: "2024-06-12T09:20:00Z"
-  },
-  {
-    id: "review-4",
-    productId: "masala-3",
-    userName: "Amit Kumar",
-    rating: 4,
-    comment: "Love this on fruit salads! Adds such a unique and delicious flavor. Kids love it too.",
-    createdAt: "2024-06-05T14:15:00Z"
-  }
-];
-
-// Helper function to get the display name of a product
-const getProductName = (product: Product | string) => 
-  typeof product === 'string' ? product : product.title;
-
-function useReviews() {
-  const [reviews, setReviews] = React.useState<Review[]>(initialReviews);
-
-  React.useEffect(() => {
-    const stored = localStorage.getItem(LOCAL_REVIEWS);
-    if (stored) {
-      try {
-        const parsedReviews = JSON.parse(stored);
-        setReviews(parsedReviews);
-        console.log("Loaded reviews from localStorage:", parsedReviews);
-      } catch (error) {
-        console.error("Error parsing stored reviews:", error);
-        setReviews(initialReviews);
-      }
-    } else {
-      console.log("No stored reviews found, using initial reviews");
-    }
-  }, []);
-
-  React.useEffect(() => {
-    try {
-      localStorage.setItem(LOCAL_REVIEWS, JSON.stringify(reviews));
-      console.log("Saved reviews to localStorage:", reviews);
-    } catch (error) {
-      console.error("Error saving reviews to localStorage:", error);
-    }
-  }, [reviews]);
-
-  const addReview = (productId: string, reviewData: { rating: number; comment: string; userName: string }) => {
-    console.log("useReviews: Adding review for product", productId, reviewData);
-    
-    const newReview: Review = {
-      id: `review-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      productId,
-      ...reviewData,
-      createdAt: new Date().toISOString()
-    };
-    
-    setReviews(current => {
-      const updated = [...current, newReview];
-      console.log("Updated reviews:", updated);
-      return updated;
-    });
-  };
-
-  return { reviews, addReview };
-}
+import { useReviews } from "@/contexts/ReviewContext";
 
 const Index = () => {
   const [drawerOpen, setDrawerOpen] = React.useState(false);

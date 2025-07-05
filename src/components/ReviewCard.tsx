@@ -43,6 +43,15 @@ export function ReviewCard({ review }: ReviewCardProps) {
           </p>
         </div>
       )}
+      {review.adminReply && (
+        <div className="mt-3 pl-4 border-l-2 border-green-600">
+          <p className="text-sm text-green-800">
+            <span className="font-semibold text-green-700">Admin Reply:</span>
+            <br />
+            {review.adminReply}
+          </p>
+        </div>
+      )}
     </div>
   );
 }

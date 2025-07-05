@@ -1,57 +1,18 @@
 import { Product, Review } from "@/lib/types";
+import { useProducts } from "@/contexts/ProductContext";
 import { ProductCard } from "./ProductCard";
 import { ProductModal } from "./ProductModal";
 import React from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-const products: Product[] = [
-  {
-    id: "masala-1",
-    title: "Pure Turmeric Powder",
-    description: "A bold blend of roasted spices—coriander, cumin, cardamom—perfect for any meal.",
-    price: 11.99,
-    image: "/images/mahalaxmi-products.jpg",
-    badge: "bestseller",
-  },
-  {
-    id: "masala-2",
-    title: " onion powder",
-    description: "Smoky paprika, garlic, ginger; adds instant heat and depth to grilled dishes.",
-    price: 13.49,
-    image: "https://images.unsplash.com/photo-1615485500704-8e990f9900f7?auto=format&fit=crop&w=800&q=80",
-    badge: "NEW",
-  },
-  {
-    id: "masala-3",
-    title: "banana powder",
-    description: "Sweet-tart, tangy, and aromatic masala for fruit, salads, or street-snack magic.",
-    price: 9.95,
-    image: "https://images.unsplash.com/photo-1618160702438-9b02ab6515c9?auto=format&fit=crop&w=800&q=80",
-  },
-  {
-    id: "masala-4",
-    title: "apple powder",
-    description: "Aromatic, creamy, expertly balanced for restaurant-style curries at home.",
-    price: 12.99,
-    image: "https://images.unsplash.com/photo-1631515243349-e0cb75fb8d3a?auto=format&fit=crop&w=800&q=80",
-  },
-  {
-    id: "masala-5",
-    title: "tomato powder",
-    description: "The perfect gift: try all five masalas in tasting tins. Limited time only!",
-    price: 44.00,
-    image: "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&w=800&q=80",
-    badge: "Popular",
-  },
-];
-
 interface ProductsGridProps {
   onAddToCart: (product: Product, quantity?: number) => void;
   reviews: Review[];
-  onAddReview: (productId: string, review: { rating: number; comment: string; userName: string }) => void;
+  onAddReview: (review: { productId: string; rating: number; comment: string; userName: string }) => void;
 }
 
 export function ProductsGrid({ onAddToCart, reviews, onAddReview }: ProductsGridProps) {
+  const { products } = useProducts();
   const [selectedProduct, setSelectedProduct] = React.useState<Product | null>(null);
   const [modalOpen, setModalOpen] = React.useState(false);
   const [scrollPosition, setScrollPosition] = React.useState(0);
@@ -69,9 +30,11 @@ export function ProductsGrid({ onAddToCart, reviews, onAddReview }: ProductsGrid
   };
 
   const handleAddReview = (reviewData: { rating: number; comment: string; userName: string }) => {
-    console.log("ProductsGrid: Handling review for product", selectedProduct?.id, reviewData);
     if (selectedProduct) {
-      onAddReview(selectedProduct.id, reviewData);
+      onAddReview({
+        productId: selectedProduct.id,
+        ...reviewData
+      });
     }
   };
 
@@ -161,11 +124,14 @@ export function ProductsGrid({ onAddToCart, reviews, onAddReview }: ProductsGrid
                   data-aos-delay={index * 100}
                   className="flex-shrink-0 w-72 snap-center"
                 >
-              <ProductCard 
-                product={product} 
-                    onAddToCart={onAddToCart}
+                  <ProductCard 
+                    product={product} 
+                    onAddToCart={product.status === 'archived' ? undefined : onAddToCart}
                     onViewProduct={handleViewProduct}
                   />
+                  {product.status === 'archived' && (
+                    <div className="absolute top-4 right-4 bg-gray-700 text-white text-xs px-3 py-1 rounded-full z-20">Out of Stock</div>
+                  )}
                 </div>
               ))}
             </div>
@@ -178,12 +144,16 @@ export function ProductsGrid({ onAddToCart, reviews, onAddReview }: ProductsGrid
                 key={product.id} 
                 data-aos="fade-up"
                 data-aos-delay={index * 100}
+                className="relative"
               >
                 <ProductCard 
                   product={product} 
-                onAddToCart={onAddToCart}
-                onViewProduct={handleViewProduct}
-              />
+                  onAddToCart={product.status === 'archived' ? undefined : onAddToCart}
+                  onViewProduct={handleViewProduct}
+                />
+                {product.status === 'archived' && (
+                  <div className="absolute top-4 right-4 bg-gray-700 text-white text-xs px-3 py-1 rounded-full z-20">Out of Stock</div>
+                )}
               </div>
             ))}
           </div>
@@ -194,7 +164,7 @@ export function ProductsGrid({ onAddToCart, reviews, onAddReview }: ProductsGrid
         product={selectedProduct}
         open={modalOpen}
         onClose={handleCloseModal}
-        onAddToCart={onAddToCart}
+        onAddToCart={selectedProduct?.status === 'archived' ? undefined : onAddToCart}
         reviews={reviews}
         onAddReview={handleAddReview}
       />

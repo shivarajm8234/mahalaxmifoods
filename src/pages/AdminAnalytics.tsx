@@ -16,48 +16,52 @@ const AdminAnalytics = () => {
 
   useEffect(() => {
     // Process sales data
-    const monthlySales = processMonthlySales(orders);
-    setSalesData(monthlySales);
+    setSalesData(getMonthlySales(orders));
 
     // Process revenue data
-    const monthlyRevenue = processMonthlyRevenue(orders);
-    setRevenueData(monthlyRevenue);
+    setRevenueData(getMonthlyRevenue(orders));
 
     // Process product sales
-    const topProducts = processProductSales(products, orders);
-    setProductSales(topProducts);
+    setProductSales(getTopProductSales(products, orders));
   }, [orders, products]);
 
-  const processMonthlySales = (orders: any[]) => {
+  function getMonthlySales(orders) {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const currentMonth = new Date().getMonth();
-    return months.slice(0, currentMonth + 1).map((month, index) => ({
-      name: month,
-      sales: Math.floor(Math.random() * 100) + 20 // Placeholder for actual sales data
-    }));
-  };
+    const salesByMonth = Array(12).fill(0);
+    orders.forEach(order => {
+      const d = new Date(order.createdAt);
+      salesByMonth[d.getMonth()] += 1;
+    });
+    return months.map((name, i) => ({ name, sales: salesByMonth[i] }));
+  }
 
-  const processMonthlyRevenue = (orders: any[]) => {
+  function getMonthlyRevenue(orders) {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const currentMonth = new Date().getMonth();
-    return months.slice(0, currentMonth + 1).map((month, index) => ({
-      name: month,
-      revenue: Math.floor(Math.random() * 5000) + 1000 // Placeholder for actual revenue data
-    }));
-  };
+    const revenueByMonth = Array(12).fill(0);
+    orders.forEach(order => {
+      const d = new Date(order.createdAt);
+      revenueByMonth[d.getMonth()] += order.total || 0;
+    });
+    return months.map((name, i) => ({ name, revenue: revenueByMonth[i] }));
+  }
 
-  const processProductSales = (products: any[], orders: any[]) => {
-    // Placeholder for actual product sales data
-    return products.slice(0, 5).map((product, index) => ({
+  function getTopProductSales(products, orders) {
+    const salesMap = {};
+    orders.forEach(order => {
+      order.items.forEach(item => {
+        salesMap[item.productId] = (salesMap[item.productId] || 0) + item.quantity;
+      });
+    });
+    return products.map(product => ({
       name: product.title,
-      value: Math.floor(Math.random() * 100) + 10
-    }));
-  };
+      value: salesMap[product.id] || 0
+    })).sort((a, b) => b.value - a.value).slice(0, 5);
+  }
 
   const stats = [
     { title: 'Total Products', value: products.length, icon: <Package className="h-6 w-6" />, trend: '+12%' },
     { title: 'Total Orders', value: orders.length, icon: <ShoppingCart className="h-6 w-6" />, trend: '+8%' },
-    { title: 'Total Revenue', value: `$${(orders.reduce((sum, order) => sum + (order.total || 0), 0)).toFixed(2)}`, icon: <DollarSign className="h-6 w-6" />, trend: '+15%' },
+    { title: 'Total Revenue', value: `₹${orders.reduce((sum, order) => sum + (order.total || 0), 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`, icon: <DollarSign className="h-6 w-6" />, trend: '+15%' },
     { title: 'Active Users', value: '1,234', icon: <Users className="h-6 w-6" />, trend: '+5%' },
   ];
 
@@ -116,7 +120,7 @@ const AdminAnalytics = () => {
                 <YAxis />
                 <Tooltip />
                 <Legend />
-                <Line type="monotone" dataKey="revenue" stroke="#82ca9d" name="Revenue ($)" />
+                <Line type="monotone" dataKey="revenue" stroke="#82ca9d" name="Revenue (₹)" />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
@@ -168,7 +172,7 @@ const AdminAnalytics = () => {
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="font-medium">${order.total?.toFixed(2)}</p>
+                    <p className="font-medium">₹{order.total?.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</p>
                     <p className="text-sm text-muted-foreground">
                       {order.status || 'Processing'}
                     </p>

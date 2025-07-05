@@ -5,6 +5,8 @@ export interface Product {
   price: number;
   image: string;
   badge?: string;
+  status?: 'active' | 'archived';
+  createdAt?: string;
 }
 
 export interface CartItem {
@@ -21,6 +23,7 @@ export interface Review {
   createdAt: string;
   verified?: boolean;
   response?: string;
+  adminReply?: string;
 }
 
 export interface OrderItem {
@@ -55,4 +58,5 @@ export interface Order {
   notes?: string;
   createdAt: string;
   updatedAt: string;
+  user?: { name: string; email: string };
 }

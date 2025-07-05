@@ -14,12 +14,13 @@ interface ProductModalProps {
   onAddReview: (reviewData: { rating: number; comment: string; userName: string }) => void;
 }
 
-export function ProductModal({ product, open, onClose, onAddToCart, reviews, onAddReview }: ProductModalProps) {
+export const ProductModal = React.memo(function ProductModal({ product, open, onClose, onAddToCart, reviews, onAddReview }: ProductModalProps) {
   if (!product) return null;
 
   const [imgSrc, setImgSrc] = React.useState(product.image);
   const [quantity, setQuantity] = useState(1);
   const [showReviewForm, setShowReviewForm] = useState(false);
+  const isArchived = product.status === 'archived';
 
   const handleAddToCart = () => {
     onAddToCart(product, quantity);
@@ -66,12 +67,18 @@ export function ProductModal({ product, open, onClose, onAddToCart, reviews, onA
                 alt={`Masala product: ${product.title}`}
                   className="max-w-full max-h-full object-contain"
                 onError={() => setImgSrc("/placeholder.svg")}
+                loading="lazy"
+                width={320}
+                height={224}
               />
               </div>
               {product.badge && (
                 <span className="absolute top-2 left-2 md:top-4 md:left-4 bg-[#6FBF73] text-[#F9F7F1] text-xs md:text-sm font-semibold px-2 md:px-4 py-1 md:py-2 rounded-full shadow-lg uppercase tracking-widest">
                   {product.badge}
                 </span>
+              )}
+              {isArchived && (
+                <span className="absolute top-2 right-2 md:top-4 md:right-4 bg-gray-700 text-white text-xs md:text-sm font-semibold px-2 md:px-4 py-1 md:py-2 rounded-full shadow-lg uppercase tracking-widest z-20">Out of Stock</span>
               )}
             </div>
             {/* Content Section */}
@@ -102,9 +109,10 @@ export function ProductModal({ product, open, onClose, onAddToCart, reviews, onA
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          setQuantity(Math.max(1, quantity - 1));
+                          if (!isArchived) setQuantity(Math.max(1, quantity - 1));
                         }}
-                        className="w-8 h-8 flex items-center justify-center rounded-full bg-[#D7263D] text-[#F9F7F1] font-bold hover:bg-[#FF6B35] transition-colors"
+                        className={`w-8 h-8 flex items-center justify-center rounded-full font-bold transition-colors ${isArchived ? 'bg-gray-400 text-white cursor-not-allowed' : 'bg-[#D7263D] text-[#F9F7F1] hover:bg-[#FF6B35]'}`}
+                        disabled={isArchived}
                       >
                         -
                       </button>
@@ -113,22 +121,27 @@ export function ProductModal({ product, open, onClose, onAddToCart, reviews, onA
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          setQuantity(quantity + 1);
+                          if (!isArchived) setQuantity(quantity + 1);
                         }}
-                        className="w-8 h-8 flex items-center justify-center rounded-full bg-[#D7263D] text-[#F9F7F1] font-bold hover:bg-[#FF6B35] transition-colors"
+                        className={`w-8 h-8 flex items-center justify-center rounded-full font-bold transition-colors ${isArchived ? 'bg-gray-400 text-white cursor-not-allowed' : 'bg-[#D7263D] text-[#F9F7F1] hover:bg-[#FF6B35]'}`}
+                        disabled={isArchived}
                       >
                         +
                       </button>
                     </div>
-                    <a
-                      href="https://rzp.io/rzp/RJ0rXaHz"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="w-auto px-6 py-2 bg-[#4CAF50] hover:bg-[#45a049] text-white font-bold rounded-xl transition-all duration-300 shadow-lg text-sm md:text-base touch-manipulation text-center"
+                    <button
+                      type="button"
+                      disabled={isArchived}
+                      onClick={e => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (!isArchived) handleAddToCart();
+                      }}
+                      className={`w-auto px-6 py-2 font-bold rounded-xl transition-all duration-300 shadow-lg text-sm md:text-base touch-manipulation text-center ${isArchived ? 'bg-gray-400 text-white cursor-not-allowed' : 'bg-[#4CAF50] hover:bg-[#45a049] text-white'}`}
+                      tabIndex={isArchived ? -1 : 0}
                     >
-                      Buy Now
-                    </a>
+                      Add to Cart
+                    </button>
                   </div>
                 </div>
               </div>
@@ -158,4 +171,4 @@ export function ProductModal({ product, open, onClose, onAddToCart, reviews, onA
       </DialogContent>
     </Dialog>
   );
-}
+});

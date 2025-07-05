@@ -1,11 +1,21 @@
 import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { Order } from '@/lib/types';
+import { db } from '@/firebase/config';
+import {
+  collection,
+  addDoc,
+  doc,
+  updateDoc,
+  onSnapshot,
+  query,
+  orderBy
+} from 'firebase/firestore';
 
 interface OrderContextType {
   orders: Order[];
   loading: boolean;
   error: string | null;
-  fetchOrders: () => Promise<void>;
+  addOrder: (order: Omit<Order, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
   updateOrderStatus: (orderId: string, status: string) => Promise<void>;
 }
 
@@ -16,80 +26,48 @@ export function OrderProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchOrders = async () => {
-    try {
-      setLoading(true);
-      // TODO: Replace with actual API call
-      // const response = await fetch('/api/orders');
-      // const data = await response.json();
-      // setOrders(data);
-      
-      // Mock data for now
-      const mockOrders: Order[] = [
-        {
-          id: 'order-1',
-          userId: 'user-1',
-          items: [
-            { productId: '1', quantity: 2, price: 19.99 },
-            { productId: '2', quantity: 1, price: 29.99 }
-          ],
-          total: 69.97,
-          status: 'completed',
-          shippingAddress: {
-            name: 'John Doe',
-            street: '123 Main St',
-            city: 'New York',
-            state: 'NY',
-            zip: '10001',
-            country: 'USA'
-          },
-          paymentMethod: 'credit_card',
-          createdAt: new Date('2023-05-15').toISOString(),
-          updatedAt: new Date('2023-05-15').toISOString()
-        },
-        // Add more mock orders as needed
-      ];
-      
-      setOrders(mockOrders);
-      setError(null);
-    } catch (err) {
-      setError('Failed to fetch orders');
-      console.error('Error fetching orders:', err);
-    } finally {
+  // Firestore: Listen for real-time order updates
+  useEffect(() => {
+    setLoading(true);
+    const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
+    const unsub = onSnapshot(q, (snapshot) => {
+      setOrders(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Order)));
       setLoading(false);
+    }, (err) => {
+      setError('Failed to fetch orders');
+      setLoading(false);
+      console.error('Error fetching orders:', err);
+    });
+    return () => unsub();
+  }, []);
+
+  const addOrder = async (orderData: Omit<Order, 'id' | 'createdAt' | 'updatedAt'>) => {
+    try {
+      await addDoc(collection(db, 'orders'), {
+        ...orderData,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+    } catch (err) {
+      setError('Failed to add order');
+      console.error('Error adding order:', err);
     }
   };
 
   const updateOrderStatus = async (orderId: string, status: string) => {
     try {
-      // TODO: Replace with actual API call
-      // const response = await fetch(`/api/orders/${orderId}`, {
-      //   method: 'PATCH',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ status })
-      // });
-      // const updatedOrder = await response.json();
-      
-      // Update local state
-      setOrders(prevOrders =>
-        prevOrders.map(order =>
-          order.id === orderId 
-            ? { ...order, status, updatedAt: new Date().toISOString() } 
-            : order
-        )
-      );
+      await updateDoc(doc(db, 'orders', orderId), {
+        status,
+        updatedAt: new Date().toISOString(),
+      });
     } catch (err) {
       console.error('Error updating order status:', err);
       throw err;
     }
   };
 
-  useEffect(() => {
-    fetchOrders();
-  }, []);
-
   return (
-    <OrderContext.Provider value={{ orders, loading, error, fetchOrders, updateOrderStatus }}>
+    <OrderContext.Provider value={{ orders, loading, error, addOrder, updateOrderStatus }}>
       {children}
     </OrderContext.Provider>
   );

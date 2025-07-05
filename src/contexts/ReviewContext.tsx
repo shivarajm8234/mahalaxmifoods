@@ -1,5 +1,16 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { Review } from "@/lib/types";
+import { db } from '@/firebase/config';
+import {
+  collection,
+  addDoc,
+  doc,
+  updateDoc,
+  deleteDoc,
+  onSnapshot,
+  query,
+  orderBy
+} from 'firebase/firestore';
 
 const LOCAL_REVIEWS = "spicy-masala-reviews";
 
@@ -40,53 +51,36 @@ const initialReviews: Review[] = [
 
 interface ReviewContextType {
   reviews: Review[];
-  addReview: (review: Omit<Review, "id" | "createdAt" | "adminReply">) => void;
-  replyToReview: (reviewId: string, reply: string) => void;
-  removeReview: (reviewId: string) => void;
+  addReview: (review: Omit<Review, "id" | "createdAt" | "adminReply">) => Promise<void>;
+  replyToReview: (reviewId: string, reply: string) => Promise<void>;
+  removeReview: (reviewId: string) => Promise<void>;
 }
 
 const ReviewContext = createContext<ReviewContextType | undefined>(undefined);
 
 export function ReviewProvider({ children }: { children: ReactNode }) {
-  const [reviews, setReviews] = useState<Review[]>(() => {
-    try {
-      const stored = localStorage.getItem(LOCAL_REVIEWS);
-      if (stored) return JSON.parse(stored);
-    } catch (e) {
-      // ignore
-    }
-    return initialReviews;
-  });
-
+  const [reviews, setReviews] = useState<Review[]>([]);
   useEffect(() => {
-    try {
-      localStorage.setItem(LOCAL_REVIEWS, JSON.stringify(reviews));
-    } catch (e) {
-      // ignore
-    }
-  }, [reviews]);
+    const q = query(collection(db, 'reviews'), orderBy('createdAt', 'desc'));
+    const unsub = onSnapshot(q, (snapshot) => {
+      setReviews(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Review)));
+    });
+    return () => unsub();
+  }, []);
 
-  const addReview = (review: Omit<Review, "id" | "createdAt" | "adminReply">) => {
-    setReviews((prev) => [
-      {
-        ...review,
-        id: `review-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        createdAt: new Date().toISOString(),
-      },
-      ...prev,
-    ]);
+  const addReview = async (review: Omit<Review, "id" | "createdAt" | "adminReply">) => {
+    await addDoc(collection(db, 'reviews'), {
+      ...review,
+      createdAt: new Date().toISOString(),
+    });
   };
 
-  const replyToReview = (reviewId: string, reply: string) => {
-    setReviews((prev) =>
-      prev.map((r) =>
-        r.id === reviewId ? { ...r, adminReply: reply } : r
-      )
-    );
+  const replyToReview = async (reviewId: string, reply: string) => {
+    await updateDoc(doc(db, 'reviews', reviewId), { adminReply: reply });
   };
 
-  const removeReview = (reviewId: string) => {
-    setReviews((prev) => prev.filter((r) => r.id !== reviewId));
+  const removeReview = async (reviewId: string) => {
+    await deleteDoc(doc(db, 'reviews', reviewId));
   };
 
   return (

@@ -10,6 +10,7 @@ import Admin from "@/pages/Admin";
 import AdminDashboard from "@/pages/AdminDashboard";
 import ManageProducts from "@/pages/ManageProducts";
 import ManageReviews from "@/pages/ManageReviews";
+import AdminOrders from "@/pages/AdminOrders";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import Footer from "@/components/Footer";
 import AOS from 'aos';
@@ -19,6 +20,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { AdminRoute } from "@/components/auth/AdminRoute";
 import { ProductProvider } from "@/contexts/ProductContext";
 import { OrderProvider } from "@/contexts/OrderContext";
+import { ReviewProvider } from "@/contexts/ReviewContext";
 
 // Error Boundary Component
 class ErrorBoundary extends Component<{ children: React.ReactNode }, { hasError: boolean }> {
@@ -114,48 +116,51 @@ const App = () => {
             <BrowserRouter>
               <div className="min-h-screen flex flex-col">
                 <ErrorBoundary>
-                  <ProductProvider>
-                    <OrderProvider>
-                      <Routes>
-                        <Route path="/" element={
-                          <>
-                            <Index />
-                            <Footer />
-                          </>
-                        } />
-                        
-                        {/* Protected Routes */}
-                        <Route element={
-                          <ProtectedRoute>
-                            <OrdersPage />
-                          </ProtectedRoute>
-                        } path="/orders" />
-                        
-                        {/* Public Admin Login */}
-                        <Route path="/admin" element={<Admin />} />
-                        
-                        {/* Protected Admin Routes */}
-                        <Route path="/admin" element={
-                          <AdminRoute>
-                            <AdminLayout />
-                          </AdminRoute>
-                        }>
-                          <Route path="dashboard" element={<AdminDashboard />} />
-                          <Route path="dashboard/analytics" element={<AdminDashboard />} />
-                          <Route path="products" element={<ManageProducts />} />
-                          <Route path="reviews" element={<ManageReviews />} />
-                        </Route>
-                        
-                        {/* 404 Page */}
-                        <Route path="*" element={
-                          <>
-                            <NotFound />
-                            <Footer />
-                          </>
-                        } />
-                      </Routes>
-                    </OrderProvider>
-                  </ProductProvider>
+                  <ReviewProvider>
+                    <Routes>
+                      <Route path="/" element={
+                        <ProductProvider realtime>
+                          <OrderProvider>
+                            <>
+                              <Index />
+                              <Footer />
+                            </>
+                          </OrderProvider>
+                        </ProductProvider>
+                      } />
+                      {/* Protected Routes */}
+                      <Route element={
+                        <ProtectedRoute>
+                          <OrdersPage />
+                        </ProtectedRoute>
+                      } path="/orders" />
+                      {/* Public Admin Login */}
+                      <Route path="/admin" element={<Admin />} />
+                      {/* Protected Admin Routes */}
+                      <Route path="/admin" element={
+                        <AdminRoute>
+                          <ProductProvider realtime>
+                            <OrderProvider>
+                              <AdminLayout />
+                            </OrderProvider>
+                          </ProductProvider>
+                        </AdminRoute>
+                      }>
+                        <Route path="dashboard" element={<AdminDashboard />} />
+                        <Route path="dashboard/analytics" element={<AdminDashboard />} />
+                        <Route path="products" element={<ManageProducts />} />
+                        <Route path="orders" element={<AdminOrders />} />
+                        <Route path="reviews" element={<ManageReviews />} />
+                      </Route>
+                      {/* 404 Page */}
+                      <Route path="*" element={
+                        <>
+                          <NotFound />
+                          <Footer />
+                        </>
+                      } />
+                    </Routes>
+                  </ReviewProvider>
                 </ErrorBoundary>
               </div>
             </BrowserRouter>

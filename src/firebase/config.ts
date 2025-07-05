@@ -30,6 +30,7 @@ import {
   WithFieldValue
 } from 'firebase/firestore';
 import { getAnalytics, isSupported, Analytics } from 'firebase/analytics';
+import { getStorage, FirebaseStorage } from 'firebase/storage';
 
 // Types
 type FirebaseServices = {
@@ -44,7 +45,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyBU-evRD3Imtb-zJhOst7WJH1HN6ty16wo",
   authDomain: "shree-mahalaxmi-foods-products.firebaseapp.com",
   projectId: "shree-mahalaxmi-foods-products",
-  storageBucket: "shree-mahalaxmi-foods-products.firebasestorage.app",
+  storageBucket: "shree-mahalaxmi-foods-products.appspot.com",
   messagingSenderId: "592899536490",
   appId: "1:592899536490:web:45f248dcb4d8844d447c13",
   measurementId: "G-NB3PRXHS1G"
@@ -112,6 +113,9 @@ const initializeFirebase = (): FirebaseServices => {
 
 // Initialize Firebase services
 const { app, auth, db, analytics } = initializeFirebase();
+
+// Initialize Firebase Storage
+const storage: FirebaseStorage = getStorage(app);
 
 // Set up global error handler for uncaught Firestore errors
 if (typeof window !== 'undefined') {
@@ -252,6 +256,7 @@ export {
   // Core Firebase services
   auth,
   db,
+  storage,
   onAuthStateChangedFirebase as onAuthStateChanged,
   type User,
   

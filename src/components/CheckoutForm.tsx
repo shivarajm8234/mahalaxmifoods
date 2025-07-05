@@ -1,8 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { useToast } from './ui/use-toast';
+import { loadScript } from '../utils/loadScript';
+import { getFunctions, httpsCallable } from 'firebase/functions';
+import { getApp } from 'firebase/app';
 
 interface CheckoutFormProps {
   onCheckout: (userData: {
@@ -11,6 +14,9 @@ interface CheckoutFormProps {
     phone: string;
     address: string;
     paymentMethod: 'online' | 'cod';
+    razorpay_payment_id?: string;
+    razorpay_order_id?: string;
+    razorpay_signature?: string;
   }) => Promise<void>;
   loading: boolean;
   onBack: () => void;
@@ -23,13 +29,119 @@ export function CheckoutForm({ onCheckout, loading, onBack, cartTotal }: Checkou
     email: '',
     phone: '',
     address: '',
-    paymentMethod: 'online' as 'online' | 'cod',
+    city: '',
+    state: '',
+    zip: '',
+    country: '',
+    paymentMethod: 'online' as 'online', // Only online
   });
   const { toast } = useToast();
+  const [razorpayKeyId, setRazorpayKeyId] = useState<string | null>(null);
+
+  // Fetch Razorpay Key ID on mount
+  useEffect(() => {
+    const fetchKey = async () => {
+      try {
+        const functions = getFunctions(getApp());
+        const getKey = httpsCallable(functions, 'getRazorpayKey');
+        const result: any = await getKey();
+        setRazorpayKeyId(result.data.keyId);
+      } catch (err) {
+        toast({
+          title: 'Payment Error',
+          description: 'Could not fetch payment key. Please try again.',
+          variant: 'destructive',
+        });
+      }
+    };
+    fetchKey();
+  }, []);
+
+  const handleRazorpayPayment = async () => {
+    if (!razorpayKeyId) {
+      toast({
+        title: 'Payment Error',
+        description: 'Payment gateway not ready. Please try again.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    // 1. Create order on backend (Firebase callable)
+    let order;
+    try {
+      const functions = getFunctions(getApp());
+      const createOrder = httpsCallable(functions, 'createOrder');
+      const res: any = await createOrder({
+        amount: Math.round(cartTotal), // amount in INR
+        currency: 'INR',
+      });
+      order = res.data.order;
+      if (!order.id) throw new Error('Invalid order response from backend');
+    } catch (err: any) {
+      toast({
+        title: 'Payment Error',
+        description: err.message || 'Could not initiate payment. Please try again.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    // 2. Load Razorpay script
+    const loaded = await loadScript('https://checkout.razorpay.com/v1/checkout.js');
+    if (!loaded) {
+      toast({
+        title: 'Payment Error',
+        description: 'Failed to load payment gateway. Please try again.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    // 3. Open Razorpay checkout
+    const options = {
+      key: razorpayKeyId,
+      amount: order.amount,
+      currency: order.currency,
+      name: 'Shree Mahalaxmi Foods',
+      description: 'Order Payment',
+      order_id: order.id, // Razorpay order_id from backend
+      handler: async function (response: any) {
+        // Payment success
+        await onCheckout({
+          ...formData,
+          paymentMethod: 'online',
+          razorpay_payment_id: response.razorpay_payment_id,
+          razorpay_order_id: response.razorpay_order_id,
+          razorpay_signature: response.razorpay_signature,
+        });
+      },
+      prefill: {
+        name: formData.name,
+        email: formData.email,
+        contact: formData.phone,
+      },
+      notes: {
+        address: formData.address,
+      },
+      theme: {
+        color: '#FF6B35',
+      },
+      modal: {
+        ondismiss: function () {
+          toast({
+            title: 'Payment Cancelled',
+            description: 'You cancelled the payment.',
+            variant: 'destructive',
+          });
+        },
+      },
+    };
+    // @ts-ignore
+    const rzp = new window.Razorpay(options);
+    rzp.open();
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name || !formData.email || !formData.phone || !formData.address) {
+    if (!formData.name || !formData.email || !formData.phone || !formData.address || !formData.city || !formData.state || !formData.zip || !formData.country) {
       toast({
         title: "Missing Information",
         description: "Please fill in all required fields",
@@ -37,7 +149,9 @@ export function CheckoutForm({ onCheckout, loading, onBack, cartTotal }: Checkou
       });
       return;
     }
-    await onCheckout(formData);
+    if (formData.paymentMethod === 'online') {
+      await handleRazorpayPayment();
+    }
   };
 
   return (
@@ -77,11 +191,47 @@ export function CheckoutForm({ onCheckout, loading, onBack, cartTotal }: Checkou
         </div>
         
         <div className="space-y-2">
-          <Label htmlFor="address">Shipping Address *</Label>
+          <Label htmlFor="address">Street Address *</Label>
           <Input
             id="address"
             value={formData.address}
             onChange={(e) => setFormData({...formData, address: e.target.value})}
+            required
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="city">City *</Label>
+          <Input
+            id="city"
+            value={formData.city}
+            onChange={(e) => setFormData({...formData, city: e.target.value})}
+            required
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="state">State *</Label>
+          <Input
+            id="state"
+            value={formData.state}
+            onChange={(e) => setFormData({...formData, state: e.target.value})}
+            required
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="zip">ZIP/Postal Code *</Label>
+          <Input
+            id="zip"
+            value={formData.zip}
+            onChange={(e) => setFormData({...formData, zip: e.target.value})}
+            required
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="country">Country *</Label>
+          <Input
+            id="country"
+            value={formData.country}
+            onChange={(e) => setFormData({...formData, country: e.target.value})}
             required
           />
         </div>
@@ -106,8 +256,8 @@ export function CheckoutForm({ onCheckout, loading, onBack, cartTotal }: Checkou
                 type="radio"
                 id="online"
                 name="paymentMethod"
-                checked={formData.paymentMethod === 'online'}
-                onChange={() => setFormData({...formData, paymentMethod: 'online'})}
+                checked={true}
+                readOnly
                 className="h-4 w-4 text-[#FF6B35] border-gray-300 focus:ring-[#FF6B35]"
               />
               <div>
@@ -115,22 +265,6 @@ export function CheckoutForm({ onCheckout, loading, onBack, cartTotal }: Checkou
                   Pay Online
                 </Label>
                 <p className="text-xs text-gray-500">Credit/Debit Card, UPI, Net Banking</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-2 p-3 border rounded-md">
-              <input
-                type="radio"
-                id="cod"
-                name="paymentMethod"
-                checked={formData.paymentMethod === 'cod'}
-                onChange={() => setFormData({...formData, paymentMethod: 'cod'})}
-                className="h-4 w-4 text-[#FF6B35] border-gray-300 focus:ring-[#FF6B35]"
-              />
-              <div>
-                <Label htmlFor="cod" className="text-sm font-medium leading-none">
-                  Cash on Delivery
-                </Label>
-                <p className="text-xs text-gray-500">Pay when you receive your order</p>
               </div>
             </div>
           </div>

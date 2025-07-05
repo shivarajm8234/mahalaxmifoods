@@ -9,11 +9,13 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { useState } from "react";
 import { Plus, Edit, Trash2, Upload, FileText, Archive, ArchiveRestore, ChevronsUpDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { storage } from "@/firebase/config";
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 
 interface ProductManagementProps {
   products: Product[];
-  onAddProduct: (product: Omit<Product, 'id' | 'status'>) => void;
-  onUpdateProduct: (id: string, product: Omit<Product, 'id'| 'status'>) => void;
+  onAddProduct: (product: Omit<Product, 'id' | 'status' | 'createdAt'>) => Promise<boolean>;
+  onUpdateProduct: (id: string, product: Omit<Product, 'id'| 'status'>) => Promise<void>;
   onArchiveProduct: (id: string) => void;
   onRestoreProduct: (id: string) => void;
   onDeletePermanently: (id: string) => void;
@@ -38,6 +40,8 @@ export function ProductManagement({
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>("");
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
 
   const resetForm = () => {
     setFormData({
@@ -54,58 +58,84 @@ export function ProductManagement({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'application/pdf'];
+      const validTypes = ['image/png', 'image/jpeg', 'image/jpg'];
       if (!validTypes.includes(file.type)) {
-        alert('Please select a valid file type: PNG, JPG, or PDF');
+        alert('Please select a valid image file: PNG, JPG, or JPEG');
         return;
       }
-
       if (file.size > 5 * 1024 * 1024) {
         alert('File size must be less than 5MB');
         return;
       }
-
       setSelectedFile(file);
-      
       const reader = new FileReader();
       reader.onloadend = () => {
         const result = reader.result as string;
         setPreviewUrl(result);
         setFormData(prev => ({ ...prev, image: result }));
       };
-
-      if (file.type.startsWith('image/')) {
-        reader.readAsDataURL(file);
-      } else if (file.type === 'application/pdf') {
-        // For PDFs, we still use the data URL to embed it, or handle as needed
-        reader.readAsDataURL(file);
-        // We could also set a placeholder icon if we don't want to embed the whole PDF
-        // setPreviewUrl("/path/to/pdf-icon.svg");
-        // setFormData(prev => ({ ...prev, image: "/path/to/pdf-icon.svg" }));
-      }
+      reader.readAsDataURL(file);
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+    setUploading(false);
+    setUploadProgress(null);
+    let imageUrl = formData.image;
+    // If a new file is selected, upload to Firebase Storage
+    if (selectedFile) {
+      try {
+        setUploading(true);
+        const storageRef = ref(storage, `product-images/${Date.now()}_${selectedFile.name}`);
+        const uploadTask = uploadBytesResumable(storageRef, selectedFile);
+        await new Promise<void>((resolve, reject) => {
+          uploadTask.on(
+            'state_changed',
+            (snapshot) => {
+              const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+              setUploadProgress(progress);
+            },
+            (error) => {
+              setUploading(false);
+              setUploadProgress(null);
+              alert('Image upload failed: ' + error.message);
+              reject(error);
+            },
+            async () => {
+              imageUrl = await getDownloadURL(uploadTask.snapshot.ref);
+              setUploading(false);
+              setUploadProgress(null);
+              resolve();
+            }
+          );
+        });
+      } catch (error: any) {
+        alert('Image upload failed: ' + error.message);
+        setUploading(false);
+        setUploadProgress(null);
+        return;
+      }
+    }
     const productData = {
       title: formData.title,
       description: formData.description,
       price: parseFloat(formData.price),
-      image: editingProduct && !selectedFile ? editingProduct.image : formData.image,
+      image: imageUrl,
       badge: formData.badge || undefined
     };
-
     if (editingProduct) {
-      onUpdateProduct(editingProduct.id, productData);
+      await onUpdateProduct(editingProduct.id, productData);
       setEditingProduct(null);
+      resetForm();
+      setIsAddDialogOpen(false);
     } else {
-      onAddProduct(productData);
+      const success = await onAddProduct(productData);
+      if (success) {
+        resetForm();
+        setIsAddDialogOpen(false);
+      }
     }
-
-    resetForm();
-    setIsAddDialogOpen(false);
   };
 
   const handleEdit = (product: Product) => {
@@ -230,7 +260,7 @@ export function ProductManagement({
                   <Input
                     id="image"
                     type="file"
-                    accept=".png,.jpg,.jpeg,.pdf"
+                    accept=".png,.jpg,.jpeg"
                     onChange={handleFileChange}
                     className="hidden"
                   />
@@ -239,7 +269,7 @@ export function ProductManagement({
                     className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                   >
                     <Upload className="h-4 w-4" />
-                    Choose File (PNG, JPG, PDF)
+                    Choose File (PNG, JPG, JPEG)
                   </Label>
                   {selectedFile && (
                     <p className="text-xs text-gray-500 mt-1">
@@ -258,11 +288,22 @@ export function ProductManagement({
                   placeholder="e.g., NEW, Popular, Bestseller"
                 />
               </div>
+              {uploading && (
+                <div className="w-full bg-gray-200 rounded-full h-2.5 mb-4">
+                  <div
+                    className="bg-blue-600 h-2.5 rounded-full"
+                    style={{ width: `${uploadProgress ?? 0}%` }}
+                  ></div>
+                  <span className="text-xs ml-2">Uploading image... {uploadProgress?.toFixed(0)}%</span>
+                </div>
+              )}
               <div className="flex justify-end space-x-2">
                 <Button type="button" variant="outline" onClick={() => setIsAddDialogOpen(false)}>
                   Cancel
                 </Button>
-                <Button type="submit" disabled={!selectedFile}>Add Product</Button>
+                <Button type="submit" disabled={uploading}>
+                  {editingProduct ? "Update Product" : "Add Product"}
+                </Button>
               </div>
             </form>
           </DialogContent>
@@ -317,7 +358,7 @@ export function ProductManagement({
                 <Input
                   id="edit-image"
                   type="file"
-                  accept=".png,.jpg,.jpeg,.pdf"
+                  accept=".png,.jpg,.jpeg"
                   onChange={handleFileChange}
                   className="hidden"
                 />
@@ -326,7 +367,7 @@ export function ProductManagement({
                   className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                 >
                   <Upload className="h-4 w-4" />
-                  Choose File (PNG, JPG, PDF)
+                  Choose File (PNG, JPG, JPEG)
                 </Label>
                 {selectedFile && (
                   <p className="text-xs text-gray-500 mt-1">
@@ -349,7 +390,9 @@ export function ProductManagement({
               <Button type="button" variant="outline" onClick={() => setEditingProduct(null)}>
                 Cancel
               </Button>
-              <Button type="submit">Update Product</Button>
+              <Button type="submit" disabled={uploading}>
+                {editingProduct ? "Update Product" : "Add Product"}
+              </Button>
             </div>
           </form>
         </DialogContent>

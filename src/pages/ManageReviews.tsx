@@ -2,50 +2,31 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Star, Check, X, Search } from "lucide-react";
+import { Star, Check, X, Search, MessageCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
-
-type Review = {
-  id: string;
-  productName: string;
-  rating: number;
-  comment: string;
-  author: string;
-  date: string;
-  status: 'pending' | 'approved' | 'rejected';
-};
-
-const reviews: Review[] = [
-  {
-    id: '1',
-    productName: 'Spice Mix',
-    rating: 5,
-    comment: 'Amazing flavor! Will definitely buy again.',
-    author: 'John D.',
-    date: '2023-06-15',
-    status: 'approved',
-  },
-  {
-    id: '2',
-    productName: 'Turmeric Powder',
-    rating: 4,
-    comment: 'Good quality, but packaging could be better.',
-    author: 'Sarah M.',
-    date: '2023-06-10',
-    status: 'pending',
-  },
-  {
-    id: '3',
-    productName: 'Garam Masala',
-    rating: 3,
-    comment: 'Average taste, expected more flavor.',
-    author: 'Mike R.',
-    date: '2023-06-05',
-    status: 'pending',
-  },
-];
+import { useReviews } from "@/contexts/ReviewContext";
+import { useProducts } from "@/contexts/ProductContext";
+import { useState } from "react";
 
 export default function ManageReviews() {
+  const { reviews, replyToReview, removeReview } = useReviews();
+  const { products } = useProducts();
+  const [replyingId, setReplyingId] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState("");
+
+  const getProductName = (productId: string) => {
+    const found = products.find(p => p.id === productId);
+    return found ? found.title : productId;
+  };
+
+  const handleReply = (reviewId: string) => {
+    if (replyText.trim()) {
+      replyToReview(reviewId, replyText.trim());
+      setReplyingId(null);
+      setReplyText("");
+    }
+  };
+
   return (
     <div className="container mx-auto p-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
@@ -74,17 +55,6 @@ export default function ManageReviews() {
                 View and manage customer reviews
               </CardDescription>
             </div>
-            <div className="flex gap-2 mt-4 md:mt-0">
-              <Button variant="outline" size="sm">
-                All
-              </Button>
-              <Button variant="ghost" size="sm">
-                Pending
-              </Button>
-              <Button variant="ghost" size="sm">
-                Approved
-              </Button>
-            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -92,6 +62,7 @@ export default function ManageReviews() {
             <TableHeader>
               <TableRow>
                 <TableHead>Product</TableHead>
+                <TableHead>User</TableHead>
                 <TableHead>Rating</TableHead>
                 <TableHead>Review</TableHead>
                 <TableHead>Status</TableHead>
@@ -102,7 +73,10 @@ export default function ManageReviews() {
               {reviews.map((review) => (
                 <TableRow key={review.id}>
                   <TableCell className="font-medium">
-                    {review.productName}
+                    {getProductName(review.productId)}
+                  </TableCell>
+                  <TableCell className="font-medium">
+                    {review.userName}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center">
@@ -112,34 +86,37 @@ export default function ManageReviews() {
                   </TableCell>
                   <TableCell className="max-w-[300px] truncate">
                     {review.comment}
+                    {review.adminReply && (
+                      <div className="mt-2 text-xs text-green-700 bg-green-50 rounded p-2">Admin Reply: {review.adminReply}</div>
+                    )}
+                    {replyingId === review.id && (
+                      <div className="mt-2 flex gap-2">
+                        <Input
+                          value={replyText}
+                          onChange={e => setReplyText(e.target.value)}
+                          placeholder="Type your reply..."
+                          className="text-xs"
+                          autoFocus
+                        />
+                        <Button size="sm" onClick={() => handleReply(review.id)}>
+                          Send
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => setReplyingId(null)}>
+                          Cancel
+                        </Button>
+                      </div>
+                    )}
                   </TableCell>
                   <TableCell>
-                    <Badge
-                      variant={
-                        review.status === 'approved'
-                          ? 'default'
-                          : review.status === 'pending'
-                          ? 'secondary'
-                          : 'destructive'
-                      }
-                    >
-                      {review.status.charAt(0).toUpperCase() + review.status.slice(1)}
-                    </Badge>
+                    <Badge variant="default">Visible</Badge>
                   </TableCell>
                   <TableCell>
                     <div className="flex justify-end gap-2">
-                      {review.status === 'pending' && (
-                        <>
-                          <Button variant="outline" size="icon" className="h-8 w-8">
-                            <Check className="h-4 w-4 text-green-600" />
-                          </Button>
-                          <Button variant="outline" size="icon" className="h-8 w-8">
-                            <X className="h-4 w-4 text-red-600" />
-                          </Button>
-                        </>
-                      )}
-                      <Button variant="ghost" size="sm">
-                        View
+                      <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setReplyingId(review.id)} title="Reply">
+                        <MessageCircle className="h-4 w-4 text-blue-600" />
+                      </Button>
+                      <Button variant="outline" size="icon" className="h-8 w-8 text-red-600" onClick={() => removeReview(review.id)} title="Delete">
+                        <X className="h-4 w-4" />
                       </Button>
                     </div>
                   </TableCell>
