@@ -37,6 +37,7 @@ export function Footer() {
             <li><a href="#products" className="hover:text-[#FFA500] transition-colors block py-1">Products</a></li>
             <li><a href="#about" className="hover:text-[#FFA500] transition-colors block py-1">About Us</a></li>
             <li><a href="#contact" className="hover:text-[#FFA500] transition-colors block py-1">Contact</a></li>
+            <li><Link to="/shipping-policy" className="hover:text-[#FFA500] transition-colors block py-1">Shipping & Delivery Policy</Link></li>
           </ul>
           <h4 className="text-lg font-bold uppercase tracking-wider text-[#FFA500] mb-4">Contact Us</h4>
           <div className="text-sm text-center text-white/70">

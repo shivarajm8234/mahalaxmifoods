@@ -21,6 +21,7 @@ import { AdminRoute } from "@/components/auth/AdminRoute";
 import { ProductProvider } from "@/contexts/ProductContext";
 import { OrderProvider } from "@/contexts/OrderContext";
 import { ReviewProvider } from "@/contexts/ReviewContext";
+import ShippingPolicy from "./pages/ShippingPolicy";
 
 // Error Boundary Component
 class ErrorBoundary extends Component<{ children: React.ReactNode }, { hasError: boolean }> {
@@ -134,6 +135,15 @@ const App = () => {
                           <OrdersPage />
                         </ProtectedRoute>
                       } path="/orders" />
+                      
+                      {/* Shipping Policy */}
+                      <Route path="/shipping-policy" element={
+                        <>
+                          <ShippingPolicy />
+                          <Footer />
+                        </>
+                      } />
+                      
                       {/* Public Admin Login */}
                       <Route path="/admin" element={<Admin />} />
                       {/* Protected Admin Routes */}
