@@ -8,7 +8,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 interface ProductsGridProps {
   onAddToCart: (product: Product, quantity?: number) => void;
   reviews: Review[];
-  onAddReview: (review: { productId: string; rating: number; comment: string; userName: string }) => void;
+  onAddReview: (review: { productId: string; rating: number; comment: string; userName: string; userId: string }) => void;
 }
 
 export function ProductsGrid({ onAddToCart, reviews, onAddReview }: ProductsGridProps) {
@@ -29,7 +29,7 @@ export function ProductsGrid({ onAddToCart, reviews, onAddReview }: ProductsGrid
     setSelectedProduct(null);
   };
 
-  const handleAddReview = (reviewData: { rating: number; comment: string; userName: string }) => {
+  const handleAddReview = (reviewData: { rating: number; comment: string; userName: string; userId: string }) => {
     if (selectedProduct) {
       onAddReview({
         productId: selectedProduct.id,

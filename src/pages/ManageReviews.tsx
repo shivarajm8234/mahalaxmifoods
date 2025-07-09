@@ -7,12 +7,14 @@ import { Input } from "@/components/ui/input";
 import { useReviews } from "@/contexts/ReviewContext";
 import { useProducts } from "@/contexts/ProductContext";
 import { useState } from "react";
+import { useToast } from "@/components/ui/use-toast";
 
 export default function ManageReviews() {
-  const { reviews, replyToReview, removeReview } = useReviews();
+  const { reviews, replyToReview, removeReview, removeAdminReply } = useReviews();
   const { products } = useProducts();
   const [replyingId, setReplyingId] = useState<string | null>(null);
   const [replyText, setReplyText] = useState("");
+  const { toast } = useToast();
 
   const getProductName = (productId: string) => {
     const found = products.find(p => p.id === productId);
@@ -24,6 +26,40 @@ export default function ManageReviews() {
       replyToReview(reviewId, replyText.trim());
       setReplyingId(null);
       setReplyText("");
+    }
+  };
+
+  const handleDelete = async (reviewId: string) => {
+    try {
+      await removeReview(reviewId);
+      toast({
+        title: "Review Deleted",
+        description: "The review was deleted successfully.",
+        variant: "default",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error Deleting Review",
+        description: error?.message || "Failed to delete review. Check your permissions.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleRemoveAdminReply = async (reviewId: string) => {
+    try {
+      await removeAdminReply(reviewId);
+      toast({
+        title: "Admin Reply Deleted",
+        description: "The admin reply was removed from the review.",
+        variant: "default",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error Deleting Admin Reply",
+        description: error?.message || "Failed to delete admin reply.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -87,7 +123,12 @@ export default function ManageReviews() {
                   <TableCell className="max-w-[300px] truncate">
                     {review.comment}
                     {review.adminReply && (
-                      <div className="mt-2 text-xs text-green-700 bg-green-50 rounded p-2">Admin Reply: {review.adminReply}</div>
+                      <div className="mt-2 text-xs text-green-700 bg-green-50 rounded p-2 flex items-center gap-2">
+                        Admin Reply: {review.adminReply}
+                        <Button size="sm" variant="ghost" className="text-red-600 ml-2 px-2 py-0.5" onClick={() => handleRemoveAdminReply(review.id)} title="Delete Admin Reply">
+                          Delete Reply
+                        </Button>
+                      </div>
                     )}
                     {replyingId === review.id && (
                       <div className="mt-2 flex gap-2">
@@ -115,7 +156,7 @@ export default function ManageReviews() {
                       <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setReplyingId(review.id)} title="Reply">
                         <MessageCircle className="h-4 w-4 text-blue-600" />
                       </Button>
-                      <Button variant="outline" size="icon" className="h-8 w-8 text-red-600" onClick={() => removeReview(review.id)} title="Delete">
+                      <Button variant="outline" size="icon" className="h-8 w-8 text-red-600" onClick={() => handleDelete(review.id)} title="Delete">
                         <X className="h-4 w-4" />
                       </Button>
                     </div>

@@ -51,9 +51,10 @@ const initialReviews: Review[] = [
 
 interface ReviewContextType {
   reviews: Review[];
-  addReview: (review: Omit<Review, "id" | "createdAt" | "adminReply">) => Promise<void>;
+  addReview: (review: Omit<Review, "id" | "createdAt" | "adminReply"> & { userId: string }) => Promise<void>;
   replyToReview: (reviewId: string, reply: string) => Promise<void>;
   removeReview: (reviewId: string) => Promise<void>;
+  removeAdminReply: (reviewId: string) => Promise<void>;
 }
 
 const ReviewContext = createContext<ReviewContextType | undefined>(undefined);
@@ -68,7 +69,7 @@ export function ReviewProvider({ children }: { children: ReactNode }) {
     return () => unsub();
   }, []);
 
-  const addReview = async (review: Omit<Review, "id" | "createdAt" | "adminReply">) => {
+  const addReview = async (review: Omit<Review, "id" | "createdAt" | "adminReply"> & { userId: string }) => {
     await addDoc(collection(db, 'reviews'), {
       ...review,
       createdAt: new Date().toISOString(),
@@ -83,8 +84,12 @@ export function ReviewProvider({ children }: { children: ReactNode }) {
     await deleteDoc(doc(db, 'reviews', reviewId));
   };
 
+  const removeAdminReply = async (reviewId: string) => {
+    await updateDoc(doc(db, 'reviews', reviewId), { adminReply: null });
+  };
+
   return (
-    <ReviewContext.Provider value={{ reviews, addReview, replyToReview, removeReview }}>
+    <ReviewContext.Provider value={{ reviews, addReview, replyToReview, removeReview, removeAdminReply }}>
       {children}
     </ReviewContext.Provider>
   );

@@ -7,6 +7,9 @@ import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { db } from '@/firebase/config';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { Input } from "@/components/ui/input";
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/components/ui/use-toast";
 
 const statusOptions = [
   "pending",
@@ -30,6 +33,19 @@ export default function AdminOrders() {
   const { orders, loading, error, updateOrderStatus } = useOrders();
   const { products } = useProducts();
   const [updating, setUpdating] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const { toast } = useToast();
+
+  const statusOptions = [
+    { value: "all", label: "All" },
+    { value: "pending", label: "Pending" },
+    { value: "processing", label: "Processing" },
+    { value: "shipped", label: "Shipped" },
+    { value: "delivered", label: "Delivered" },
+    { value: "cancelled", label: "Cancelled" },
+    { value: "completed", label: "Completed" },
+  ];
 
   const getProduct = (productId: string) => products.find(p => p.id === productId);
   const getProductName = (productId: string, fallback?: string) => {
@@ -43,21 +59,72 @@ export default function AdminOrders() {
 
   const handleStatusChange = async (orderId: string, status: string) => {
     setUpdating(orderId);
-    await updateOrderStatus(orderId, status);
-    setUpdating(null);
+    try {
+      await updateOrderStatus(orderId, status);
+      toast({
+        title: "Order Status Updated",
+        description: `Order status changed to '${status}'.`,
+        variant: "default",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error Updating Status",
+        description: error?.message || "Failed to update order status.",
+        variant: "destructive",
+      });
+    } finally {
+      setUpdating(null);
+    }
   };
+
+  // Filter orders by orderId, product name, and status
+  const filteredOrders = orders.filter(order => {
+    const searchTerm = search.trim().toLowerCase();
+    const matchesOrderId = searchTerm
+      ? order.id.toLowerCase().includes(searchTerm)
+      : true;
+    const matchesProductName = searchTerm
+      ? order.items.some(item => {
+          const productName = getProductName(item.productId, item.name).toLowerCase();
+          return productName.includes(searchTerm);
+        })
+      : true;
+    const matchesStatus = statusFilter === "all" ? true : order.status === statusFilter;
+    return (matchesOrderId || matchesProductName) && matchesStatus;
+  });
 
   if (loading) return <div className="p-8 text-center text-lg text-gray-600">Loading orders...</div>;
   if (error) return <div className="p-8 text-center text-red-500 font-semibold">{error}</div>;
 
   return (
     <div className="container mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-6">All Orders</h1>
-      {orders.length === 0 ? (
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-4">
+        <h1 className="text-3xl font-bold mb-4 md:mb-0">All Orders</h1>
+        <div className="flex flex-col md:flex-row gap-2 md:gap-4 w-full md:w-auto">
+          <Input
+            type="search"
+            placeholder="Search by Order ID..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="w-full md:w-80"
+          />
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-full md:w-48">
+              <SelectValue placeholder="Filter by Status" />
+            </SelectTrigger>
+            <SelectContent>
+              {statusOptions.map(opt => (
+                <SelectItem key={opt.value.toString()} value={opt.value.toString()}>{opt.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      {filteredOrders.length === 0 ? (
         <div className="text-center text-gray-500">No orders found.</div>
       ) : (
         <div className="space-y-6">
-          {orders.map(order => (
+          {filteredOrders.map(order => (
             <Card key={order.id} className="overflow-hidden">
               <CardHeader className="bg-gray-50 flex flex-col md:flex-row md:items-center md:justify-between">
                 <div>
@@ -82,7 +149,7 @@ export default function AdminOrders() {
                     disabled={updating === order.id}
                     className="border rounded px-2 py-1 text-sm"
                   >
-                    {statusOptions.map(opt => (
+                    {["pending","processing","shipped","delivered","cancelled","completed"].map(opt => (
                       <option key={opt} value={opt}>{opt}</option>
                     ))}
                   </select>

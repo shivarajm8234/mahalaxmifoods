@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { ReviewForm } from "./ReviewForm";
 import { ReviewList } from "./ReviewList";
 import { X } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ProductModalProps {
   product: Product | null;
@@ -11,7 +12,7 @@ interface ProductModalProps {
   onClose: () => void;
   onAddToCart: (product: Product, quantity: number) => void;
   reviews: Review[];
-  onAddReview: (reviewData: { rating: number; comment: string; userName: string }) => void;
+  onAddReview: (review: { productId: string; rating: number; comment: string; userName: string; userId: string }) => void;
 }
 
 export const ProductModal = React.memo(function ProductModal({ product, open, onClose, onAddToCart, reviews, onAddReview }: ProductModalProps) {
@@ -21,6 +22,7 @@ export const ProductModal = React.memo(function ProductModal({ product, open, on
   const [quantity, setQuantity] = useState(1);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const isArchived = product.status === 'archived';
+  const { currentUser } = useAuth();
 
   const handleAddToCart = () => {
     onAddToCart(product, quantity);
@@ -28,10 +30,16 @@ export const ProductModal = React.memo(function ProductModal({ product, open, on
   };
 
   const handleSubmitReview = (review: { name: string; rating: number; comment: string }) => {
+    if (!currentUser) {
+      alert("You must be logged in to submit a review.");
+      return;
+    }
     onAddReview({
       rating: review.rating,
       comment: review.comment,
-      userName: review.name
+      userName: review.name,
+      productId: product.id,
+      userId: currentUser.uid,
     });
     setShowReviewForm(false);
   };

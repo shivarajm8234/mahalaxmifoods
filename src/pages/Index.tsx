@@ -13,6 +13,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "@/hooks/use-toast";
 import { useCart } from "@/contexts/CartContext";
 import { useReviews } from "@/contexts/ReviewContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Index = () => {
   const [drawerOpen, setDrawerOpen] = React.useState(false);
@@ -25,6 +26,7 @@ const Index = () => {
     getCartCount 
   } = useCart();
   const { reviews, addReview } = useReviews();
+  const { currentUser } = useAuth();
   const isMobile = useIsMobile();
   
   // Calculate total items in cart
@@ -87,6 +89,14 @@ const Index = () => {
     setDrawerOpen(prev => !prev);
   };
 
+  const handleAddReview = (review: { productId: string; rating: number; comment: string; userName: string; userId: string }) => {
+    if (!currentUser) {
+      alert("You must be logged in to submit a review.");
+      return;
+    }
+    addReview({ ...review, userId: currentUser.uid });
+  };
+
   return (
     <div className="min-h-screen bg-brand-cream font-sans antialiased flex flex-col">
       <Navbar 
@@ -99,7 +109,7 @@ const Index = () => {
         <ProductsGrid 
           onAddToCart={handleAddToCart} 
           reviews={reviews}
-          onAddReview={addReview}
+          onAddReview={handleAddReview}
         />
         <AboutSection />
         <ContactSection />
