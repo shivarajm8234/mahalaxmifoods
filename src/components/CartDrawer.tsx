@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { X, Plus, Minus, ShoppingCart, ArrowLeft } from 'lucide-react';
+import { X, Plus, Minus, ShoppingCart, ArrowLeft, LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { CartItem as LibCartItem, Product } from '@/lib/types';
@@ -49,6 +49,7 @@ export function CartDrawer({
   };
 
   const handleProceedToCheckout = () => {
+    // Checkout will be handled by the CheckoutForm component
     setShowCheckoutForm(true);
   };
 

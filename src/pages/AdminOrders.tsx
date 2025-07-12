@@ -12,6 +12,7 @@ import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@
 import { useToast } from "@/components/ui/use-toast";
 
 const statusOptions = [
+  "confirmed",
   "pending",
   "processing",
   "shipped",
@@ -34,11 +35,12 @@ export default function AdminOrders() {
   const { products } = useProducts();
   const [updating, setUpdating] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("confirmed");
   const { toast } = useToast();
 
   const statusOptions = [
     { value: "all", label: "All" },
+    { value: "confirmed", label: "Confirmed" },
     { value: "pending", label: "Pending" },
     { value: "processing", label: "Processing" },
     { value: "shipped", label: "Shipped" },
@@ -130,7 +132,17 @@ export default function AdminOrders() {
                 <div>
                   <CardTitle className="text-lg">Order #{order.id.substring(0, 8).toUpperCase()}</CardTitle>
                   <CardDescription className="mt-1">
-                    Placed on {new Date(order.createdAt).toLocaleDateString()}
+                    Placed on {(() => {
+                      let dateObj: Date | null = null;
+                      const raw = order.createdAt;
+                      if (raw != null && typeof raw === 'object' && 'seconds' in raw && typeof (raw as any).seconds === 'number') {
+                        dateObj = new Date((raw as any).seconds * 1000);
+                      } else if (typeof raw === 'string') {
+                        const parsed = new Date(raw);
+                        if (!isNaN(parsed.getTime())) dateObj = parsed;
+                      }
+                      return dateObj ? dateObj.toLocaleDateString() : 'Unknown Date';
+                    })()}
                   </CardDescription>
                   {order.user && (
                     <div className="mt-2 text-sm text-gray-700">
@@ -149,7 +161,7 @@ export default function AdminOrders() {
                     disabled={updating === order.id}
                     className="border rounded px-2 py-1 text-sm"
                   >
-                    {["pending","processing","shipped","delivered","cancelled","completed"].map(opt => (
+                    {["confirmed","pending","processing","shipped","delivered","cancelled","completed"].map(opt => (
                       <option key={opt} value={opt}>{opt}</option>
                     ))}
                   </select>

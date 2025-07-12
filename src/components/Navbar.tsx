@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Menu, X, ShoppingCart } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
 import { GoogleSignInButton } from "./auth/GoogleSignInButton";
@@ -23,6 +23,15 @@ export function Navbar({ onCartClick, cartItemCount }: NavbarProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const { currentUser, loading } = useAuth();
   const { items: cartItems, getCartCount } = useCart();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleLogoClick = (e: React.MouseEvent) => {
+    if (location.pathname === '/') {
+      e.preventDefault();
+      window.location.reload();
+    }
+  };
   const cartCount = getCartCount();
 
   useEffect(() => {
@@ -63,9 +72,13 @@ export function Navbar({ onCartClick, cartItemCount }: NavbarProps) {
 
         {/* Mobile Logo - Centered */}
         <div className="text-lg font-playfair text-[#FF6B35] font-bold px-2" style={{ letterSpacing: '0.02em' }}>
-          <a href="#hero" className="hover:text-[#D7263D] transition-colors duration-150">
+          <Link 
+            to="/" 
+            className="hover:text-[#D7263D] transition-colors duration-150"
+            onClick={handleLogoClick}
+          >
             Shree Mahalaxmi Food Products
-          </a>
+          </Link>
         </div>
 
         {/* Mobile Right Icons */}
@@ -98,14 +111,15 @@ export function Navbar({ onCartClick, cartItemCount }: NavbarProps) {
       {/* Desktop Layout */}
       <div className="hidden lg:flex w-full max-w-7xl mx-auto px-6 items-center justify-between">
         {/* Brand Name - Left Side */}
-        <a 
-          href="#hero" 
+        <Link 
+          to="/"
           className={`text-xl font-playfair font-bold whitespace-nowrap ${
             isScrolled ? 'text-[#D7263D]' : 'text-white drop-shadow-md'
           } hover:text-[#D7263D] transition-colors duration-150`}
+          onClick={handleLogoClick}
         >
           Shree Mahalaxmi
-        </a>
+        </Link>
         
         {/* Navigation Links - Center */}
         <nav className="flex-1 flex justify-center">

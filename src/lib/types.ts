@@ -3,6 +3,8 @@ export interface Product {
   title: string;
   description: string;
   price: number;
+  gst: number;
+  fee: number;
   image: string;
   badge?: string;
   status?: 'active' | 'archived';

@@ -12,13 +12,29 @@ export default function ManageProducts() {
   const [open, setOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  const [form, setForm] = useState({ title: "", description: "", price: "", image: "", badge: "" });
+  const [form, setForm] = useState({ 
+    title: "", 
+    description: "", 
+    price: "", 
+    gst: "5", 
+    fee: "0",
+    image: "", 
+    badge: "" 
+  });
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [error, setError] = useState("");
   const { toast } = useToast();
 
   const handleOpen = () => {
-    setForm({ title: "", description: "", price: "", image: "", badge: "" });
+    setForm({ 
+      title: "", 
+      description: "", 
+      price: "", 
+      gst: "5", 
+      fee: "0",
+      image: "", 
+      badge: "" 
+    });
     setError("");
     setEditMode(false);
     setEditId(null);
@@ -30,6 +46,8 @@ export default function ManageProducts() {
       title: product.title,
       description: product.description,
       price: product.price.toString(),
+      gst: (product.gst || 0).toString(),
+      fee: (product.fee || 0).toString(),
       image: product.image,
       badge: product.badge || ""
     });
@@ -69,6 +87,8 @@ export default function ManageProducts() {
           title: form.title,
           description: form.description,
           price: parseFloat(form.price),
+          gst: parseFloat(form.gst) || 0,
+          fee: parseFloat(form.fee) || 0,
           image: imageData,
           badge: form.badge || undefined,
         });
@@ -79,6 +99,8 @@ export default function ManageProducts() {
           title: form.title,
           description: form.description,
           price: parseFloat(form.price),
+          gst: parseFloat(form.gst) || 0,
+          fee: parseFloat(form.fee) || 0,
           image: imageData,
           badge: form.badge || undefined,
         });
@@ -231,18 +253,50 @@ export default function ManageProducts() {
                 required
               />
             </div>
-            <div>
-              <input
-                name="price"
-                value={form.price}
-                onChange={handleChange}
-                placeholder="Price"
-                type="number"
-                min="0"
-                step="0.01"
-                className="w-full border rounded px-3 py-2"
-                required
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Price (₹)</label>
+                <input
+                  name="price"
+                  value={form.price}
+                  onChange={handleChange}
+                  placeholder="0.00"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className="w-full border rounded px-3 py-2"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">GST (%)</label>
+                <input
+                  name="gst"
+                  value={form.gst}
+                  onChange={handleChange}
+                  placeholder="0"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.1"
+                  className="w-full border rounded px-3 py-2"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Fee (₹)</label>
+                <input
+                  name="fee"
+                  value={form.fee}
+                  onChange={handleChange}
+                  placeholder="0.00"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className="w-full border rounded px-3 py-2"
+                  required
+                />
+              </div>
             </div>
             <div>
               <input

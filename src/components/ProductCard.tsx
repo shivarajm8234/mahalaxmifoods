@@ -52,7 +52,9 @@ export const ProductCard = React.memo(function ProductCard({
               disabled={isArchived}
               onClick={e => {
                 e.stopPropagation();
-                if (!isArchived) onAddToCart(product, 1);
+                if (!isArchived) {
+                  onAddToCart(product, 1);
+                }
               }}
               className={`px-4 py-1 rounded-full font-bold transition-all duration-300 whitespace-nowrap border-2 ${isArchived ? 'bg-gray-400 text-white border-gray-400 cursor-not-allowed' : 'bg-[#4CAF50] text-white border-[#4CAF50] hover:bg-[#45a049] hover:border-[#45a049] hover:scale-110'}`}
               aria-label={`Add ${product.title} to cart`}

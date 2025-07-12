@@ -50,7 +50,7 @@ export function UserDropdown({ user }: UserDropdownProps) {
               {user.displayName || "User"}
             </p>
             <p className="text-xs leading-none text-muted-foreground">
-              Admin
+              {user.email}
             </p>
           </div>
         </DropdownMenuLabel>

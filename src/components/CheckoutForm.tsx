@@ -6,6 +6,7 @@ import { useToast } from './ui/use-toast';
 import { loadScript } from '../utils/loadScript';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { getApp } from 'firebase/app';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface CheckoutFormProps {
   onCheckout: (userData: {
@@ -24,16 +25,17 @@ interface CheckoutFormProps {
 }
 
 export function CheckoutForm({ onCheckout, loading, onBack, cartTotal }: CheckoutFormProps) {
+  const { currentUser } = useAuth();
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
+    name: currentUser?.displayName || '',
+    email: currentUser?.email || '',
     phone: '',
     address: '',
     city: '',
     state: '',
     zip: '',
-    country: '',
-    paymentMethod: 'online' as 'online', // Only online
+    country: 'India',
+    paymentMethod: 'online' as 'online',
   });
   const { toast } = useToast();
   const [razorpayKeyId, setRazorpayKeyId] = useState<string | null>(null);
@@ -58,6 +60,15 @@ export function CheckoutForm({ onCheckout, loading, onBack, cartTotal }: Checkou
   }, []);
 
   const handleRazorpayPayment = async () => {
+    if (!currentUser) {
+      toast({
+        title: 'Login Required',
+        description: 'Please log in to complete your purchase.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     if (!razorpayKeyId) {
       toast({
         title: 'Payment Error',
@@ -141,6 +152,16 @@ export function CheckoutForm({ onCheckout, loading, onBack, cartTotal }: Checkou
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!currentUser) {
+      toast({
+        title: 'Login Required',
+        description: 'Please log in to complete your purchase.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     if (!formData.name || !formData.email || !formData.phone || !formData.address || !formData.city || !formData.state || !formData.zip || !formData.country) {
       toast({
         title: "Missing Information",

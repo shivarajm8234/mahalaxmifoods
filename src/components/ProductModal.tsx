@@ -104,8 +104,23 @@ export const ProductModal = React.memo(function ProductModal({ product, open, on
                     </svg>
                     Delivery within 7 working days
                   </div>
-                  <div className="text-2xl font-bold text-[#FF6B35]">
-                    ₹{product.price.toFixed(2)}
+                  <div className="space-y-1">
+                    <div className="text-2xl font-bold text-[#FF6B35]">
+                      ₹{product.price.toFixed(2)}
+                    </div>
+                    {product.gst > 0 && (
+                      <div className="text-sm text-gray-600">
+                        + {product.gst}% GST: ₹{(product.price * (product.gst / 100)).toFixed(2)}
+                      </div>
+                    )}
+                    {product.fee > 0 && (
+                      <div className="text-sm text-gray-600">
+                        + Fee: ₹{product.fee.toFixed(2)}
+                      </div>
+                    )}
+                    <div className="text-sm font-semibold text-gray-800 pt-1">
+                      Total: ₹{(product.price + (product.price * (product.gst / 100)) + product.fee).toFixed(2)}
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <h4 className="font-semibold text-[#2F2F2F] text-sm md:text-base">Perfect for:</h4>

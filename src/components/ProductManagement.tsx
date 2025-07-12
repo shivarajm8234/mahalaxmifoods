@@ -35,6 +35,8 @@ export function ProductManagement({
     title: "",
     description: "",
     price: "",
+    gst: "5", // Default GST of 5%
+    fee: "0", // Default fee of 0
     image: "",
     badge: ""
   });
@@ -48,6 +50,8 @@ export function ProductManagement({
       title: "",
       description: "",
       price: "",
+      gst: "5",
+      fee: "0",
       image: "",
       badge: ""
     });
@@ -121,6 +125,8 @@ export function ProductManagement({
       title: formData.title,
       description: formData.description,
       price: parseFloat(formData.price),
+      gst: parseFloat(formData.gst) || 0,
+      fee: parseFloat(formData.fee) || 0,
       image: imageUrl,
       badge: formData.badge || undefined
     };
@@ -145,6 +151,8 @@ export function ProductManagement({
       title: product.title,
       description: product.description,
       price: product.price.toString(),
+      gst: (product.gst || 0).toString(),
+      fee: (product.fee || 0).toString(),
       image: product.image,
       badge: product.badge || ""
     });
@@ -242,17 +250,44 @@ export function ProductManagement({
                   required
                 />
               </div>
-              <div>
-                <Label htmlFor="price">Price (₹)</Label>
-                <Input
-                  id="price"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.price}
-                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                  required
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="price">Price (₹)</Label>
+                  <Input
+                    id="price"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.price}
+                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="gst">GST (%)</Label>
+                  <Input
+                    id="gst"
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="100"
+                    value={formData.gst}
+                    onChange={(e) => setFormData({ ...formData, gst: e.target.value })}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="fee">Fee (₹)</Label>
+                  <Input
+                    id="fee"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.fee}
+                    onChange={(e) => setFormData({ ...formData, fee: e.target.value })}
+                    required
+                  />
+                </div>
               </div>
               <div>
                 <Label htmlFor="image">Product Image/File</Label>
@@ -340,17 +375,44 @@ export function ProductManagement({
                 required
               />
             </div>
-            <div>
-              <Label htmlFor="edit-price">Price (₹)</Label>
-              <Input
-                id="edit-price"
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.price}
-                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                required
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="edit-price">Price (₹)</Label>
+                <Input
+                  id="edit-price"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.price}
+                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-gst">GST (%)</Label>
+                <Input
+                  id="edit-gst"
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  max="100"
+                  value={formData.gst}
+                  onChange={(e) => setFormData({ ...formData, gst: e.target.value })}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-fee">Fee (₹)</Label>
+                <Input
+                  id="edit-fee"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.fee}
+                  onChange={(e) => setFormData({ ...formData, fee: e.target.value })}
+                  required
+                />
+              </div>
             </div>
             <div>
               <Label htmlFor="edit-image">Product Image/File</Label>
