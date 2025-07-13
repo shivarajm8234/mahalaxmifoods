@@ -24,6 +24,8 @@ type OrderItem = {
   price: number;
   quantity: number;
   image?: string;
+  gst?: number; // Added for GST
+  shippingFee?: number; // Added for shipping fee
 };
 
 type Order = {
@@ -33,11 +35,16 @@ type Order = {
   total: number;
   status: OrderStatus;
   shippingAddress: {
-    address: string;
+    name?: string;
+    street?: string;
     city: string;
     state: string;
-    postalCode: string;
+    zip?: string;
+    postalCode?: string;
     country: string;
+    phone?: string;
+    email?: string;
+    address?: string; // For backward compatibility
   };
   paymentMethod: string;
   createdAt: Timestamp;
@@ -211,15 +218,64 @@ export function OrdersPage() {
                   </TableBody>
                 </Table>
                 
-                <div className="border-t p-4 flex justify-end">
+                <div className="border-t p-4 flex flex-col md:flex-row md:items-start md:justify-between">
+                  <div className="mb-4 md:mb-0">
+                    <div className="font-semibold text-gray-700 mb-2">Shipping Address:</div>
+                    <div className="text-sm text-gray-600 space-y-1">
+                      {order.shippingAddress?.name && (
+                        <div className="font-medium">{order.shippingAddress.name}</div>
+                      )}
+                      {(order.shippingAddress?.street || order.shippingAddress?.address) && (
+                        <div>{order.shippingAddress.street || order.shippingAddress.address}</div>
+                      )}
+                      <div>
+                        {[
+                          order.shippingAddress?.city,
+                          order.shippingAddress?.state,
+                          order.shippingAddress?.zip || order.shippingAddress?.postalCode
+                        ].filter(Boolean).join(', ')}
+                      </div>
+                      {order.shippingAddress?.country && (
+                        <div>{order.shippingAddress.country}</div>
+                      )}
+                      {order.shippingAddress?.phone && (
+                        <div className="text-gray-500">Phone: {order.shippingAddress.phone}</div>
+                      )}
+                      {order.shippingAddress?.email && (
+                        <div className="text-gray-500">Email: {order.shippingAddress.email}</div>
+                      )}
+                    </div>
+                  </div>
                   <div className="text-right">
-                    <div className="text-sm text-gray-500">Order Total</div>
-                    <div className="text-xl font-bold">₹{order.total.toFixed(2)}</div>
+                    <div className="font-semibold text-gray-700 mb-2">Price Summary:</div>
+                    <div className="text-sm space-y-1">
+                      <div className="flex justify-between">
+                        <span>Subtotal:</span>
+                        <span>₹{order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>GST:</span>
+                        <span>₹{order.items.reduce((sum, item) => {
+                          const itemGst = (item.price * (item.gst || 0) / 100) * item.quantity;
+                          return sum + itemGst;
+                        }, 0).toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Shipping:</span>
+                        <span>₹{order.items.reduce((sum, item) => {
+                          return sum + (item.shippingFee || 0) * item.quantity;
+                        }, 0).toFixed(2)}</span>
+                      </div>
+                      <div className="border-t pt-1 font-semibold">
+                        <div className="flex justify-between">
+                          <span>Total:</span>
+                          <span>₹{order.total.toFixed(2)}</span>
+                        </div>
+                      </div>
+                    </div>
                     
                     <div className="mt-4 space-x-2">
-                      <Button variant="outline" size="sm" className="mr-2">
-                        View Details
-                      </Button>
+                      {/* Removed View Details button */}
                       {order.status === 'pending' && (
                         <Button variant="outline" size="sm" className="text-red-600 border-red-200 hover:bg-red-50">
                           Cancel Order

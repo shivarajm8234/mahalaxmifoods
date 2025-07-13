@@ -113,13 +113,13 @@ export const ProductModal = React.memo(function ProductModal({ product, open, on
                         + {product.gst}% GST: ₹{(product.price * (product.gst / 100)).toFixed(2)}
                       </div>
                     )}
-                    {product.fee > 0 && (
+                    {product.shippingFee > 0 && (
                       <div className="text-sm text-gray-600">
-                        + Fee: ₹{product.fee.toFixed(2)}
+                        + Shipping Fee: ₹{product.shippingFee.toFixed(2)}
                       </div>
                     )}
                     <div className="text-sm font-semibold text-gray-800 pt-1">
-                      Total: ₹{(product.price + (product.price * (product.gst / 100)) + product.fee).toFixed(2)}
+                      Total: ₹{(product.price + (product.price * (product.gst / 100)) + product.shippingFee).toFixed(2)}
                     </div>
                   </div>
                   <div className="space-y-2">

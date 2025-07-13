@@ -4,7 +4,7 @@ export interface Product {
   description: string;
   price: number;
   gst: number;
-  fee: number;
+  shippingFee: number;
   image: string;
   badge?: string;
   status?: 'active' | 'archived';

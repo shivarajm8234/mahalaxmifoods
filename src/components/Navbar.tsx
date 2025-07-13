@@ -113,9 +113,7 @@ export function Navbar({ onCartClick, cartItemCount }: NavbarProps) {
         {/* Brand Name - Left Side */}
         <Link 
           to="/"
-          className={`text-xl font-playfair font-bold whitespace-nowrap ${
-            isScrolled ? 'text-[#D7263D]' : 'text-white drop-shadow-md'
-          } hover:text-[#D7263D] transition-colors duration-150`}
+          className={`text-xl font-playfair font-bold whitespace-nowrap text-[#D7263D] hover:text-[#D7263D] transition-colors duration-150`}
           onClick={handleLogoClick}
         >
           Shree Mahalaxmi
@@ -128,9 +126,7 @@ export function Navbar({ onCartClick, cartItemCount }: NavbarProps) {
               <li key={link.name}>
                 <a 
                   href={link.href} 
-                  className={`relative group hover:text-[#D7263D] transition-colors duration-200 ${
-                    isScrolled ? 'text-[#2F2F2F]' : 'text-white drop-shadow-md'
-                  }`}
+                  className={`relative group hover:text-[#D7263D] transition-colors duration-200 text-[#2F2F2F]`}
                 >
                   {link.name}
                   <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#D7263D] transition-all duration-200 group-hover:w-full"></span>

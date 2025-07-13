@@ -241,12 +241,15 @@ export function MasalaChatBot() {
   }
 
   return (
-    <div className="fixed z-50 bottom-10 right-4 md:bottom-8 md:right-10">
+    <div className="fixed z-[9999] bottom-0 right-0">
       {open && (
-        <div className="w-full max-w-md bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden border border-gray-200 transition-all duration-300 transform">
+        <div
+          className="bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden border border-gray-200 transition-all duration-300 transform"
+          style={{ maxWidth: 400, minWidth: 250, marginRight: 16, marginBottom: 16 }}
+        >
           {/* Header */}
           <div 
-            className="bg-gradient-to-r from-[#D7263D] to-[#b31e32] text-white p-4 flex justify-between items-center cursor-pointer"
+            className="bg-gradient-to-r from-[#D7263D] to-[#b31e32] text-white p-4 flex justify-between items-center cursor-pointer relative"
             onClick={() => setIsMinimized(!isMinimized)}
           >
             <div className="flex items-center gap-3">
@@ -270,9 +273,10 @@ export function MasalaChatBot() {
               </button>
               <button 
                 onClick={() => setOpen(false)}
-                className="text-white/80 hover:text-white transition-colors p-1"
+                className="text-white/90 hover:text-white bg-transparent p-1 rounded-full focus:outline-none focus:ring-2 focus:ring-white"
+                style={{ fontSize: 24, lineHeight: 1 }}
               >
-                <X size={20} />
+                <X size={24} />
               </button>
             </div>
           </div>
@@ -395,10 +399,8 @@ export function MasalaChatBot() {
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          className="bg-[#D7263D] text-white p-4 rounded-full shadow-lg hover:bg-[#b31e32] transition-all duration-300 flex items-center justify-center"
-          style={{
-            boxShadow: '0 4px 20px rgba(215, 38, 61, 0.3)'
-          }}
+          className="bg-[#D7263D] text-white p-4 m-4 rounded-full shadow-lg hover:bg-[#b31e32] transition-all duration-300 flex items-center justify-center"
+          style={{ boxShadow: '0 4px 20px rgba(215, 38, 61, 0.3)' }}
         >
           <MessageCircle size={24} />
         </button>

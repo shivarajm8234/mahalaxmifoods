@@ -17,7 +17,7 @@ export default function ManageProducts() {
     description: "", 
     price: "", 
     gst: "5", 
-    fee: "0",
+    shippingFee: "0",
     image: "", 
     badge: "" 
   });
@@ -31,7 +31,7 @@ export default function ManageProducts() {
       description: "", 
       price: "", 
       gst: "5", 
-      fee: "0",
+      shippingFee: "0",
       image: "", 
       badge: "" 
     });
@@ -47,7 +47,7 @@ export default function ManageProducts() {
       description: product.description,
       price: product.price.toString(),
       gst: (product.gst || 0).toString(),
-      fee: (product.fee || 0).toString(),
+      shippingFee: (product.shippingFee || 0).toString(),
       image: product.image,
       badge: product.badge || ""
     });
@@ -88,7 +88,7 @@ export default function ManageProducts() {
           description: form.description,
           price: parseFloat(form.price),
           gst: parseFloat(form.gst) || 0,
-          fee: parseFloat(form.fee) || 0,
+          shippingFee: parseFloat(form.shippingFee) || 0,
           image: imageData,
           badge: form.badge || undefined,
         });
@@ -100,7 +100,7 @@ export default function ManageProducts() {
           description: form.description,
           price: parseFloat(form.price),
           gst: parseFloat(form.gst) || 0,
-          fee: parseFloat(form.fee) || 0,
+          shippingFee: parseFloat(form.shippingFee) || 0,
           image: imageData,
           badge: form.badge || undefined,
         });
@@ -284,10 +284,10 @@ export default function ManageProducts() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Fee (₹)</label>
+                <label className="block text-sm font-medium mb-1">Shipping Fee (₹)</label>
                 <input
-                  name="fee"
-                  value={form.fee}
+                  name="shippingFee"
+                  value={form.shippingFee}
                   onChange={handleChange}
                   placeholder="0.00"
                   type="number"

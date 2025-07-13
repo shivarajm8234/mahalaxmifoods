@@ -1,4 +1,4 @@
-import { doc, getDoc, setDoc, serverTimestamp, collection, arrayUnion, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp, collection, arrayUnion, updateDoc, getDocs } from 'firebase/firestore';
 import { db } from '@/firebase/config';
 
 export interface CheckoutResult {
@@ -15,6 +15,8 @@ export interface CartItem {
   image?: string;
   description?: string;
   category?: string;
+  gst?: number;
+  shippingFee?: number;
 }
 
 const CART_STORAGE_KEY = 'cart';
@@ -90,6 +92,16 @@ const saveCartToFirestore = async (cart: CartItem[], userId: string) => {
   }, 500); // 500ms debounce delay
 };
 
+// Helper to fetch all products as a map by id
+async function fetchProductsMap() {
+  const snapshot = await getDocs(collection(db, 'products'));
+  const map = {};
+  snapshot.forEach(doc => {
+    map[doc.id] = doc.data();
+  });
+  return map;
+}
+
 // Sync cart between localStorage and Firestore
 export const syncCart = async (userId: string): Promise<CartItem[]> => {
   try {
@@ -112,6 +124,37 @@ export const syncCart = async (userId: string): Promise<CartItem[]> => {
         mergedCart.push(serverItem);
       }
     });
+
+    // --- PATCH: Ensure gst and shippingFee are present ---
+    const productsMap = await fetchProductsMap();
+    console.log('🔍 Cart sync - Products map:', productsMap);
+    console.log('🔍 Cart sync - Before patch, merged cart:', mergedCart);
+    
+    for (const item of mergedCart) {
+      const product = productsMap[item.id];
+      console.log(`🔍 Processing item ${item.id} (${item.name}):`, {
+        itemGst: item.gst,
+        itemShippingFee: item.shippingFee,
+        productGst: product?.gst,
+        productShippingFee: product?.shippingFee
+      });
+      
+      if (product) {
+        if (typeof item.gst === 'undefined') {
+          item.gst = product.gst || 0;
+          console.log(`✅ Updated GST for ${item.name}: ${item.gst}`);
+        }
+        if (typeof item.shippingFee === 'undefined') {
+          item.shippingFee = product.shippingFee || 0;
+          console.log(`✅ Updated shipping fee for ${item.name}: ${item.shippingFee}`);
+        }
+      } else {
+        console.warn(`⚠️ Product not found for item ${item.id} (${item.name})`);
+      }
+    }
+    
+    console.log('🔍 Cart sync - After patch, merged cart:', mergedCart);
+    // --- END PATCH ---
     
     // Save merged cart to both local and server
     saveCartToLocal(mergedCart);
@@ -130,14 +173,17 @@ export const syncCart = async (userId: string): Promise<CartItem[]> => {
 };
 
 export const addToCart = async (item: Omit<CartItem, 'quantity'> & { quantity?: number }, userId?: string): Promise<CartItem[]> => {
+  console.log('🔍 addToCart - Adding item:', item);
   const quantity = item.quantity || 1;
   const cart = getCart();
   const existingItemIndex = cart.findIndex(i => i.id === item.id);
 
   if (existingItemIndex >= 0) {
     cart[existingItemIndex].quantity += quantity;
+    console.log('🔍 addToCart - Updated existing item quantity:', cart[existingItemIndex]);
   } else {
     cart.push({ ...item, quantity });
+    console.log('🔍 addToCart - Added new item:', cart[cart.length - 1]);
   }
 
   // Save to local storage immediately

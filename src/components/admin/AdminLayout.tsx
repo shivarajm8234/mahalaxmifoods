@@ -27,7 +27,7 @@ export function AdminLayout() {
         {/* Sidebar */}
         <div className="w-64 bg-white border-r border-gray-200 fixed h-full">
           <div className="p-4 border-b border-gray-200">
-            <h1 className="text-xl font-bold text-indigo-600">Admin Panel</h1>
+            <h1 className="text-xl font-bold text-[#D7263D]">Admin Panel</h1>
           </div>
           <nav className="p-4 space-y-1">
             <Link

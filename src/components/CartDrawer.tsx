@@ -35,12 +35,38 @@ export function CartDrawer({
   const [animateAddId, setAnimateAddId] = useState<string | null>(null);
   const [visible, setVisible] = useState(open);
 
-  // Calculate cart total
-  const getCartTotal = () => {
-    const total = items.reduce((sum, item) => {
+  // Calculate cart totals with GST and shipping fees
+  const getCartTotals = () => {
+    console.log('🔍 CartDrawer - Calculating totals for items:', items);
+    
+    const subtotal = items.reduce((sum, item) => {
       return sum + (item.product.price * item.quantity);
     }, 0);
-    return total;
+    
+    // Calculate GST for each item
+    const gstTotal = items.reduce((sum, item) => {
+      const itemGst = (item.product.price * (item.product.gst || 0) / 100) * item.quantity;
+      console.log(`🔍 GST calculation for ${item.product.title}: price=${item.product.price}, gst=${item.product.gst}, qty=${item.quantity}, itemGst=${itemGst}`);
+      return sum + itemGst;
+    }, 0);
+    
+    // Calculate shipping fees (sum of all shipping fees)
+    const shippingFeesTotal = items.reduce((sum, item) => {
+      const itemShippingFee = (item.product.shippingFee || 0) * item.quantity;
+      console.log(`🔍 Shipping fee calculation for ${item.product.title}: shippingFee=${item.product.shippingFee}, qty=${item.quantity}, itemShippingFee=${itemShippingFee}`);
+      return sum + itemShippingFee;
+    }, 0);
+    
+    const total = subtotal + gstTotal + shippingFeesTotal;
+    
+    console.log('🔍 CartDrawer - Final totals:', { subtotal, gstTotal, shippingFeesTotal, total });
+    
+    return {
+      subtotal,
+      gstTotal,
+      shippingFeesTotal,
+      total
+    };
   };
 
   // Get total number of items in cart
@@ -138,7 +164,7 @@ export function CartDrawer({
 
   if (!visible && !open) return null;
 
-  const total = getCartTotal();
+  const totals = getCartTotals();
   const itemCount = getCartCount();
 
   // Render floating mini-cart if drawer closed
@@ -155,7 +181,7 @@ export function CartDrawer({
           {itemCount} item{itemCount !== 1 ? 's' : ''}
         </span>
         <span className="text-white font-playfair font-bold text-lg">
-          ₹{total.toFixed(2)}
+          ₹{totals.total.toFixed(2)}
         </span>
         <svg className="ml-1" width="20" height="20" fill="none">
           <path d="M6 8l4 4 4-4" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -211,7 +237,7 @@ export function CartDrawer({
                 onCheckout={handleCheckoutSubmit} 
                 loading={isCheckingOut}
                 onBack={handleBackToCart}
-                cartTotal={total}
+                cartTotal={totals.total}
               />
             ) : (
               <>
@@ -324,11 +350,23 @@ export function CartDrawer({
                     <div className="space-y-2">
                       <div className="flex justify-between">
                         <span>Subtotal</span>
-                        <span>₹{total.toFixed(2)}</span>
+                        <span>₹{totals.subtotal.toFixed(2)}</span>
                       </div>
-                      <div className="flex justify-between font-medium">
+                      {totals.gstTotal > 0 && (
+                        <div className="flex justify-between text-sm text-gray-600">
+                          <span>GST</span>
+                          <span>₹{totals.gstTotal.toFixed(2)}</span>
+                        </div>
+                      )}
+                      {totals.shippingFeesTotal > 0 && (
+                        <div className="flex justify-between text-sm text-gray-600">
+                          <span>Shipping Fee</span>
+                          <span>₹{totals.shippingFeesTotal.toFixed(2)}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between font-medium border-t pt-2">
                         <span>Total</span>
-                        <span>₹{total.toFixed(2)}</span>
+                        <span>₹{totals.total.toFixed(2)}</span>
                       </div>
                     </div>
                     <Button

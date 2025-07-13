@@ -20,6 +20,7 @@ type CartContextType = {
   updateCartItemQuantity: (itemId: string, quantity: number) => void;
   clearCart: () => void;
   getCartTotal: () => number;
+  getCartTotals: () => { subtotal: number; gstTotal: number; shippingFeesTotal: number; total: number };
   getCartCount: () => number;
   checkout: (userData: any) => Promise<{ success: boolean; error?: any }>;
 };
@@ -135,7 +136,42 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [currentUser?.uid]);
 
   const getCartTotal = useCallback(() => {
-    return items.reduce((total, item) => total + (item.price * item.quantity), 0);
+    const subtotal = items.reduce((total, item) => total + (item.price * item.quantity), 0);
+    
+    // Calculate GST for each item
+    const gstTotal = items.reduce((total, item) => {
+      const itemGst = (item.price * (item.gst || 0) / 100) * item.quantity;
+      return total + itemGst;
+    }, 0);
+    
+    // Calculate shipping fees
+    const shippingFeesTotal = items.reduce((total, item) => {
+      return total + (item.shippingFee || 0) * item.quantity;
+    }, 0);
+    
+    return subtotal + gstTotal + shippingFeesTotal;
+  }, [items]);
+
+  const getCartTotals = useCallback(() => {
+    const subtotal = items.reduce((total, item) => total + (item.price * item.quantity), 0);
+    
+    // Calculate GST for each item
+    const gstTotal = items.reduce((total, item) => {
+      const itemGst = (item.price * (item.gst || 0) / 100) * item.quantity;
+      return total + itemGst;
+    }, 0);
+    
+    // Calculate shipping fees
+    const shippingFeesTotal = items.reduce((total, item) => {
+      return total + (item.shippingFee || 0) * item.quantity;
+    }, 0);
+    
+    return {
+      subtotal,
+      gstTotal,
+      shippingFeesTotal,
+      total: subtotal + gstTotal + shippingFeesTotal
+    };
   }, [items]);
 
   const getCartCount = useCallback(() => {
@@ -170,9 +206,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
     updateCartItemQuantity,
     clearCart,
     getCartTotal,
+    getCartTotals,
     getCartCount,
     checkout,
-  }), [items, addToCart, removeFromCart, updateCartItemQuantity, clearCart, getCartTotal, getCartCount, checkout]);
+  }), [items, addToCart, removeFromCart, updateCartItemQuantity, clearCart, getCartTotal, getCartTotals, getCartCount, checkout]);
 
   return (
     <CartContext.Provider value={value}>

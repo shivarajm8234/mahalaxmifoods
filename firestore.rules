@@ -13,7 +13,7 @@ service cloud.firestore {
                    (!request.resource.data.keys().hasAny(['badge']) || request.resource.data.badge is string);
       
       allow update: if request.auth != null && 
-                   request.resource.data.diff(resource.data).affectedKeys().hasOnly(['title', 'description', 'price', 'image', 'status', 'badge']);
+                   request.resource.data.diff(resource.data).affectedKeys().hasOnly(['title', 'description', 'price', 'image', 'status', 'badge', 'gst', 'shippingFee']);
       allow delete: if request.auth != null && request.auth.token.email == 'shreemahalaxmi.product@gmail.com';
     }
     

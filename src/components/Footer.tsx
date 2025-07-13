@@ -80,10 +80,10 @@ export function Footer() {
           </div>
         </div>
       </footer>
-      <div className="w-full bg-[#1A2634] text-center py-3 text-xs text-white/70">
-        Developed by <span className="font-semibold text-[#FFA500]">Tech Astra</span> |
-        Contact: <a href="mailto:vivekvernekar02@gmail.com" className="underline hover:text-[#FFA500]">contactus.techastra@gmail.com</a>,
-      </div>
+             <div className="w-full bg-[#1A2634] text-center py-3 text-xs text-white/70">
+         Developed by <span className="font-semibold text-[#FFA500]">Tech Astra</span> |
+         Contact: <a href="mailto:contactus.techastra@gmail.com" className="underline hover:text-[#FFA500]">contactus.techastra@gmail.com</a>
+       </div>
     </>
   );
 }

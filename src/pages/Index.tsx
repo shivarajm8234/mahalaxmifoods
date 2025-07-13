@@ -125,6 +125,8 @@ const Index = () => {
             description: utilsItem.description || '',
             price: utilsItem.price,
             image: utilsItem.image || '',
+            gst: utilsItem.gst || 0,
+            shippingFee: utilsItem.shippingFee || 0,
           };
           return {
             product,
@@ -137,7 +139,8 @@ const Index = () => {
         onCheckout={handleCheckout}
         loading={false}
       />
-      {!(isMobile && (drawerOpen || cart.length > 0)) && <MasalaChatBot />}
+      {!isMobile && <MasalaChatBot />}
+      {isMobile && !drawerOpen && <MasalaChatBot />}
     </div>
   );
 };

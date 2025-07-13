@@ -9,6 +9,8 @@ export const toLibCartItem = (item: CartUtilsCartItem, product: Product): TypesC
     description: item.description || '',
     price: item.price,
     image: item.image || '',
+    gst: item.gst || 0,
+    shippingFee: item.shippingFee || 0,
   },
   quantity: item.quantity,
 });
@@ -31,4 +33,6 @@ export const productToCartItem = (product: Product, quantity: number = 1): CartU
   price: product.price,
   image: product.image,
   quantity,
+  gst: product.gst,
+  shippingFee: product.shippingFee,
 });

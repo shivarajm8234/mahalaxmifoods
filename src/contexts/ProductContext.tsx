@@ -17,57 +17,8 @@ import { useToast } from "@/components/ui/use-toast";
 
 const LOCAL_PRODUCTS = "spicy-masala-products";
 
-// This is the default list of products if none are found in storage.
-const initialProducts: Product[] = [
-  {
-    id: "masala-1",
-    title: "Pure Turmeric Powder",
-    description: "A bold blend of roasted spices—coriander, cumin, cardamom—perfect for any meal.",
-    price: 11.99,
-    image: "/images/mahalaxmi-products.jpg",
-    badge: "bestseller",
-    status: 'active',
-    createdAt: "2024-01-10T10:00:00Z",
-  },
-  {
-    id: "masala-2",
-    title: "onion powder",
-    description: "Smoky paprika, garlic, ginger; adds instant heat and depth to grilled dishes.",
-    price: 13.49,
-    image: "https://images.unsplash.com/photo-1615485500704-8e990f9900f7?auto=format&fit=crop&w=800&q=80",
-    badge: "NEW",
-    status: 'active',
-    createdAt: "2024-02-15T12:00:00Z",
-  },
-  {
-    id: "masala-3",
-    title: "banana powder",
-    description: "Sweet-tart, tangy, and aromatic masala for fruit, salads, or street-snack magic.",
-    price: 9.95,
-    image: "https://images.unsplash.com/photo-1618160702438-9b02ab6515c9?auto=format&fit=crop&w=800&q=80",
-    status: 'active',
-    createdAt: "2024-03-20T15:00:00Z",
-  },
-  {
-    id: "masala-4",
-    title: "apple powder",
-    description: "Aromatic, creamy, expertly balanced for restaurant-style curries at home.",
-    price: 12.99,
-    image: "https://images.unsplash.com/photo-1631515243349-e0cb75fb8d3a?auto=format&fit=crop&w=800&q=80",
-    status: 'active',
-    createdAt: "2024-04-05T09:00:00Z",
-  },
-  {
-    id: "masala-5",
-    title: "tomato powder",
-    description: "The perfect gift: try all five masalas in tasting tins. Limited time only!",
-    price: 44.00,
-    image: "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&w=800&q=80",
-    badge: "Popular",
-    status: 'active',
-    createdAt: "2024-05-12T11:00:00Z",
-  },
-];
+// Remove initialProducts fallback. Only use Firestore data.
+// const initialProducts: Product[] = [ ... ]; // <-- REMOVE or comment out this block
 
 interface ProductContextType {
   products: Product[];
@@ -171,13 +122,13 @@ export function ProductProvider({ children, realtime = false }: ProductProviderP
 
   const addProduct = async (productData: Omit<Product, 'id' | 'status' | 'createdAt'>) => {
     try {
-      const { title, description, price, image, ...rest } = productData;
-      
+      const { title, description, price, image, gst, shippingFee, ...rest } = productData;
+
       // Validate required fields
       if (!title?.trim() || !description?.trim() || typeof price !== 'number' || !image?.trim()) {
         throw new Error("Please fill in all required product fields.");
       }
-      
+
       // Create product data object with only defined and non-empty fields
       const productDataToSave: Record<string, any> = {
         title: title.trim(),
@@ -187,15 +138,23 @@ export function ProductProvider({ children, realtime = false }: ProductProviderP
         status: "active",
         createdAt: new Date().toISOString(),
       };
-      
+
+      // Handle GST and shipping fee fields
+      if (typeof gst === 'number') {
+        productDataToSave.gst = gst;
+      }
+      if (typeof shippingFee === 'number') {
+        productDataToSave.shippingFee = shippingFee;
+      }
+
       // Handle optional fields
       if (rest.badge?.trim()) {
         productDataToSave.badge = rest.badge.trim();
       }
-      
+
       // Add the document to Firestore
       await addDoc(collection(db, "products"), productDataToSave);
-      
+
       toast({
         title: "Product Added",
         description: `${title} was added successfully.`,
@@ -215,7 +174,7 @@ export function ProductProvider({ children, realtime = false }: ProductProviderP
 
   const updateProduct = async (id: string, productData: Omit<Product, 'id' | 'status'>) => {
     const updateData: any = { ...productData };
-    
+
     // If badge is an empty string, remove it from the update data
     if ('badge' in updateData && !updateData.badge) {
       delete updateData.badge;
@@ -224,6 +183,14 @@ export function ProductProvider({ children, realtime = false }: ProductProviderP
         badge: deleteField()
       });
     } else {
+      // Handle GST and shipping fee fields - ensure they are numbers or remove them
+      if ('gst' in updateData && typeof updateData.gst !== 'number') {
+        delete updateData.gst;
+      }
+      if ('shippingFee' in updateData && typeof updateData.shippingFee !== 'number') {
+        delete updateData.shippingFee;
+      }
+      
       await updateDoc(doc(db, "products", id), updateData);
     }
   };

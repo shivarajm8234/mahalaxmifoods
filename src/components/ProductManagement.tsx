@@ -36,7 +36,7 @@ export function ProductManagement({
     description: "",
     price: "",
     gst: "5", // Default GST of 5%
-    fee: "0", // Default fee of 0
+    shippingFee: "0", // Default shipping fee of 0
     image: "",
     badge: ""
   });
@@ -51,7 +51,7 @@ export function ProductManagement({
       description: "",
       price: "",
       gst: "5",
-      fee: "0",
+      shippingFee: "0",
       image: "",
       badge: ""
     });
@@ -126,7 +126,7 @@ export function ProductManagement({
       description: formData.description,
       price: parseFloat(formData.price),
       gst: parseFloat(formData.gst) || 0,
-      fee: parseFloat(formData.fee) || 0,
+      shippingFee: parseFloat(formData.shippingFee) || 0,
       image: imageUrl,
       badge: formData.badge || undefined
     };
@@ -152,7 +152,7 @@ export function ProductManagement({
       description: product.description,
       price: product.price.toString(),
       gst: (product.gst || 0).toString(),
-      fee: (product.fee || 0).toString(),
+      shippingFee: (product.shippingFee || 0).toString(),
       image: product.image,
       badge: product.badge || ""
     });
@@ -277,14 +277,14 @@ export function ProductManagement({
                   />
                 </div>
                 <div>
-                  <Label htmlFor="fee">Fee (₹)</Label>
+                  <Label htmlFor="shippingFee">Shipping Fee (₹)</Label>
                   <Input
-                    id="fee"
+                    id="shippingFee"
                     type="number"
                     step="0.01"
                     min="0"
-                    value={formData.fee}
-                    onChange={(e) => setFormData({ ...formData, fee: e.target.value })}
+                    value={formData.shippingFee}
+                    onChange={(e) => setFormData({ ...formData, shippingFee: e.target.value })}
                     required
                   />
                 </div>
@@ -402,14 +402,14 @@ export function ProductManagement({
                 />
               </div>
               <div>
-                <Label htmlFor="edit-fee">Fee (₹)</Label>
+                <Label htmlFor="edit-shippingFee">Shipping Fee (₹)</Label>
                 <Input
-                  id="edit-fee"
+                  id="edit-shippingFee"
                   type="number"
                   step="0.01"
                   min="0"
-                  value={formData.fee}
-                  onChange={(e) => setFormData({ ...formData, fee: e.target.value })}
+                  value={formData.shippingFee}
+                  onChange={(e) => setFormData({ ...formData, shippingFee: e.target.value })}
                   required
                 />
               </div>
