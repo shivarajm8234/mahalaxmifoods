@@ -218,13 +218,7 @@ export function MasalaChatBot() {
     console.log('MasalaChatBot mounted. window.innerWidth:', window.innerWidth);
   }, []);
 
-  useEffect(() => {
-    console.log('MasalaChatBot open state:', open);
-    if (window.innerWidth < 768 && !open) {
-      const timer = setTimeout(() => setOpen(true), 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [open]);
+  // Removed auto-open on mobile
 
   useEffect(() => {
     if (chatRef.current)
