@@ -85,7 +85,7 @@ const FAQS: { q: string[]; a: string }[] = [
       "email",
       "phone number"
     ],
-    a: "You can reach us at: \n📞 +91 8297222222 \n✉️ info@shreemahalaxmifoods.com \n📍 Kandhavara, Chikkaballapur, Karnataka"
+    a: "You can reach us at: \n📞 +91 8050625634 \n✉️ info@shreemahalaxmifoods.com \n📍 Kandhavara, Chikkaballapur, Karnataka"
   },
   
   // About Us
@@ -196,7 +196,7 @@ function getBotReply(userMsg: string): string {
   
   // Default response for unknown queries
   return `I'm sorry, I couldn't find specific information about "${userMsg}". ` +
-         `For detailed inquiries, please contact our customer support at +91 8297222222 or email info@shreemahalaxmifoods.com. ` +
+         `For detailed inquiries, please contact our customer support at +91 8050625634 or email info@shreemahalaxmifoods.com. ` +
          `You can ask me about our products, prices, delivery, or payment methods.`;
 }
 
@@ -211,7 +211,20 @@ export function MasalaChatBot() {
       text: "Namaste! I'm your virtual assistant. How can I help you today?\n\nHere are some things I can help with:\n1. What products do you offer?\n2. How can I place an order?\n3. What are your delivery options?\n4. Can I get a bulk order discount?\n5. What are your business hours?" 
     }
   ]);
+  const [hasUserSentMessage, setHasUserSentMessage] = useState(false);
   const chatRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    console.log('MasalaChatBot mounted. window.innerWidth:', window.innerWidth);
+  }, []);
+
+  useEffect(() => {
+    console.log('MasalaChatBot open state:', open);
+    if (window.innerWidth < 768 && !open) {
+      const timer = setTimeout(() => setOpen(true), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [open]);
 
   useEffect(() => {
     if (chatRef.current)
@@ -232,6 +245,7 @@ export function MasalaChatBot() {
     if (!input.trim()) return;
     const question = input.trim();
     setMessages((msgs) => [...msgs, { sender: "user", text: question }]);
+    setHasUserSentMessage(true);
     setTimeout(() => {
       setMessages(msgs =>
         [...msgs, { sender: "bot", text: getBotReply(question) }]
@@ -245,7 +259,16 @@ export function MasalaChatBot() {
       {open && (
         <div
           className="bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden border border-gray-200 transition-all duration-300 transform"
-          style={{ maxWidth: 400, minWidth: 250, marginRight: 16, marginBottom: 16 }}
+          style={{ 
+            maxWidth: 400, minWidth: 250,
+            width: window.innerWidth >= 768 ? '50vw' : '95vw',
+            height: window.innerWidth >= 768 ? '50vh' : '65vh',
+            borderRadius: 20,
+            marginRight: window.innerWidth >= 768 ? 0 : 8,
+            marginBottom: window.innerWidth >= 768 ? 0 : 8,
+            display: 'flex',
+            flexDirection: 'column',
+          }}
         >
           {/* Header */}
           <div 
@@ -288,8 +311,8 @@ export function MasalaChatBot() {
                 ref={chatRef}
                 className="flex-1 p-4 overflow-y-auto chat-container"
                 style={{ 
-                  maxHeight: '70vh',
-                  minHeight: '250px',
+                  flex: '1 1 0',
+                  minHeight: 0,
                   scrollBehavior: 'smooth',
                   background: 'linear-gradient(180deg, #FFF9F9 0%, #FFFFFF 100%)',
                   overscrollBehavior: 'contain',
