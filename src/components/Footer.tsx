@@ -41,7 +41,7 @@ export function Footer() {
             </ul>
             <h4 className="text-lg font-bold uppercase tracking-wider text-[#FFA500] mb-4">Contact Us</h4>
             <div className="text-sm text-center text-white/70">
-              <p>Kandhavara<br/>Chikkaballapur, Karnataka</p>
+              <p>Chokkahalli<br/>Karnataka 562103</p>
               <p className="mt-2">
                 <a href="tel:080-9823453" className="hover:text-[#FFA500] transition-colors">+91 8050625634</a>
               </p>
