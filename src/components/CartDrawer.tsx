@@ -238,6 +238,8 @@ export function CartDrawer({
                 loading={isCheckingOut}
                 onBack={handleBackToCart}
                 cartTotal={totals.total}
+                gstTotal={totals.gstTotal}
+                shippingFeesTotal={totals.shippingFeesTotal}
               />
             ) : (
               <>

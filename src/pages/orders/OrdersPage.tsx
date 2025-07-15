@@ -269,7 +269,11 @@ export function OrdersPage() {
                       <div className="border-t pt-1 font-semibold">
                         <div className="flex justify-between">
                           <span>Total:</span>
-                          <span>₹{order.total.toFixed(2)}</span>
+                          <span>
+                            ₹{order.items.reduce((sum, item) =>
+                              sum + ((item.price + (item.price * (item.gst || 0) / 100) + (item.shippingFee || 0)) * item.quantity)
+                            , 0).toFixed(2)}
+                          </span>
                         </div>
                       </div>
                     </div>

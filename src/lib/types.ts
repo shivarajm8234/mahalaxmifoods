@@ -34,6 +34,8 @@ export interface OrderItem {
   price: number;
   name?: string;
   image?: string;
+  gst?: number;
+  shippingFee?: number;
 }
 
 export interface ShippingAddress {

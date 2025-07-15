@@ -174,6 +174,8 @@ export default function AdminOrders() {
                     <TableRow>
                       <TableHead>Product</TableHead>
                       <TableHead>Price</TableHead>
+                      <TableHead>GST</TableHead>
+                      <TableHead>Shipping Fee</TableHead>
                       <TableHead>Quantity</TableHead>
                       <TableHead>Total</TableHead>
                     </TableRow>
@@ -188,8 +190,16 @@ export default function AdminOrders() {
                           </div>
                         </TableCell>
                         <TableCell>₹{item.price.toFixed(2)}</TableCell>
+                        <TableCell>
+                          {item.gst ? `${item.gst}% (₹${((item.price * item.gst / 100) * item.quantity).toFixed(2)})` : "—"}
+                        </TableCell>
+                        <TableCell>
+                          {item.shippingFee ? `₹${(item.shippingFee * item.quantity).toFixed(2)}` : "—"}
+                        </TableCell>
                         <TableCell>{item.quantity}</TableCell>
-                        <TableCell>₹{(item.price * item.quantity).toFixed(2)}</TableCell>
+                        <TableCell>
+                          ₹{((item.price + (item.price * (item.gst || 0) / 100) + (item.shippingFee || 0)) * item.quantity).toFixed(2)}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -208,7 +218,11 @@ export default function AdminOrders() {
                       ].filter(Boolean).join(', ')}
                     </div>
                   </div>
-                  <div className="mt-2 md:mt-0 font-bold text-lg">Order Total: ₹{order.total?.toFixed(2)}</div>
+                  <div className="mt-2 md:mt-0 font-bold text-lg">
+                    Order Total: ₹{order.items.reduce((sum, item) =>
+                      sum + ((item.price + (item.price * (item.gst || 0) / 100) + (item.shippingFee || 0)) * item.quantity)
+                    , 0).toFixed(2)}
+                  </div>
                 </div>
               </CardContent>
             </Card>
